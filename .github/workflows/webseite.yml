@@ -41,6 +41,8 @@ jobs:
           cp *_amd64.deb ../website/download/Breadbin_amd64.deb
           cp *.x86_64.rpm ../website/download/Breadbin.x86_64.rpm
           gh release view --json tagName -q .tagName > ../website/download/version.txt
+      - name: Anleitung aus dem Handbuch der App bauen
+        run: python3 .github/anleitung.py
       - if: steps.da.outputs.ok == '1'
         name: Hochladen (FTPS)
         run: |

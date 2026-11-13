@@ -19,7 +19,7 @@
 
 <p>Breadbin erfasst deine C64-Spiele aus Ordnern, Netzlaufwerken und von den USB-Sticks deiner
 Ultimate-Geräte, zeigt, was wo liegt, holt Beschreibungen und Bilder und startet Spiele direkt auf
-einer Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+.</p>
+einem Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+.</p>
 
 <h3 id="h-start">Erste Schritte</h3>
 <ol>
@@ -86,7 +86,7 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     Lag die Diskette schon vorher auf dem Gerät (kein Hinkopieren), speichert das Spiel direkt in diese Datei.</li>
   <li><b>Auf das Gerät kopieren</b>: Mehrere Zeilen markieren (Cmd- bzw. Strg-Klick, Shift-Klick), dann
     „Auf Gerät kopieren …“. Die Spiele landen mit ihrem Namen in einem Ordner auf dem Stick – praktisch für
-    Favoriten oder eine eigene Liste, die man ohne Rechner im Menü der Ultimate findet. Was schon auf dem Gerät
+    Favoriten oder eine eigene Liste, die man ohne Rechner im Menü des Ultimate findet. Was schon auf dem Gerät
     liegt, wird nicht noch einmal kopiert.</li>
   <li>Neben dem Gerät stehen <b>Firmware</b> und, wenn nötig, ein <b>⚠</b> mit Hinweisen, was damit nicht geht
     (etwa zu alte Firmware oder JiffyDOS als KERNAL – damit laden keine Bänder).</li>
@@ -109,7 +109,7 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     Titelbild oder eigene Spielszene gespeichert (320 × 200, ohne Rahmen) – etwa für die
     Gemeinschaftsdaten. Denselben Knopf gibt es im Dialog „Angaben selbst eintragen“ bei Titelbild und Spielszene.
     Die Ultimate schickt ihr Bild dafür kurz als Videostrom; andere Empfänger (z. B. eine
-    Jukebox) verlieren ihn dabei. <b>Nur mit Netzwerkkabel:</b> Den Videostrom schickt die Ultimate ausschließlich über
+    Jukebox) verlieren ihn dabei. <b>Nur mit Netzwerkkabel:</b> Den Videostrom schickt der Ultimate ausschließlich über
     Ethernet; ein Gerät, das nur per WLAN im Netz hängt, liefert kein Bild. Kommt trotz Kabel kein Bild an, blockiert
     womöglich die Firewall eingehende UDP-Pakete.</li>
   <li><b>Titelbild automatisch</b> (⚙ Einstellungen, Standard aus): Nach „Starten“ wartet die App die eingestellte
@@ -205,9 +205,9 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     Spiel ausdrücklich „Bei ScreenScraper nachschlagen“. Mit ScreenScraper als bevorzugter Quelle ist es umgekehrt.</li>
   <li>Übernommene Angaben sind in den Details gekennzeichnet. Änderst du sie, werden es deine eigenen (teilbar).</li>
   <li><b>Gemeinschaftsdatenbank:</b> „Gemeinschaftsdaten aktualisieren“ lädt den aktuellen Stand der gemeinsamen
-    Datenbank von 8bitcavern.de und liest ihn ein (Adresse in ⚙). Beim Start sieht Breadbin höchstens einmal pro
+    Datenbank von 8bitcavern.de und liest ihn ein (Server in ⚙ wählbar). Beim Start sieht Breadbin höchstens einmal pro
     Woche selbst nach, ob es einen neuen Stand gibt, und liest ihn ein (abschaltbar in ⚙). „Beitrag vorbereiten …“ schreibt deine selbst
-    geschriebenen Angaben im Aufbau der Datenbank in einen Ordner – etwa in die Arbeitskopie deines Forks; von dort
+    geschriebenen Angaben im Aufbau der Datenbank in einen Ordner – etwa in die Arbeitskopie deines Forks von <code>github.com/sedorrr/breadbin-db</code>; von dort
     reichst du sie per Pull Request ein. Einfacher, ohne GitHub-Konto: <b>„Beitrag einsenden …“</b> schickt sie an den
     Annahme-Server auf 8bitcavern.de, wo sie geprüft und dann in die Gemeinschaftsdaten übernommen werden. Breadbin merkt
     sich, was schon eingesandt ist, und schickt beim nächsten Mal nur Neues und Geändertes (ein Haken im Dialog sendet
@@ -262,4 +262,5 @@ Schlüsselbund.</p>
 <p>Ins Netz geht Breadbin nur für deine Geräte, ScreenScraper (wenn eingerichtet) und 8bitcavern.de: dort liegen die
 Gemeinschaftsdaten und eine kleine Datei mit der neuesten Breadbin-Fassung. Ist eine neuere Fassung da, steht unten
 in der Statuszeile „Breadbin … ist da“ – ein Klick öffnet die Seite zum Herunterladen. Beides lässt sich in ⚙
-abschalten.</p>
+abschalten. Der Server zählt diese Abfragen nur anonym je Tag und Version; IP-Adressen, Kennungen oder Cookies werden
+nicht gespeichert.</p>

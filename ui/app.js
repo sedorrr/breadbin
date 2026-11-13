@@ -1773,7 +1773,7 @@ async function loadDevices() {
         </div>
       </details>
     </li>`).join("")
-    : `<li class="empty">${t("Noch kein Gerät. Mit „+ Gerät“ eine Ultimate im Netzwerk hinzufügen, um Spiele dort zu starten.")}</li>`;
+    : `<li class="empty">${t("Noch kein Gerät. Mit „+ Gerät“ einen Ultimate im Netzwerk hinzufügen, um Spiele dort zu starten.")}</li>`;
   devices.forEach((d) => refreshDeviceStatus(d.id));
 }
 

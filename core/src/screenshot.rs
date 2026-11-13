@@ -1,4 +1,4 @@
-//! Bildschirmfoto von einer Ultimate (Ultimate 64, C64 Ultimate) über ihren Videostrom.
+//! Bildschirmfoto von einem Ultimate (Ultimate 64, C64 Ultimate) über seinen Videostrom.
 //!
 //! Die Ultimate schickt das VIC-Bild per UDP: 780 Byte je Paket, 12 Byte Kopf
 //! (`<HHHHBBH`: Folge, Bildnummer, Zeile mit Bit 15 = letztes Paket, Breite, Zeilen je Paket,

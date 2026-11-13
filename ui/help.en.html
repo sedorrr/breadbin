@@ -201,9 +201,9 @@ ScreenScraper page) in your browser.</p>
     “Look up on ScreenScraper” for a game. With ScreenScraper as the preferred source it is the other way round.</li>
   <li>Taken-over details are marked in the details pane. If you edit them, they become your own (shareable).</li>
   <li><b>Community database:</b> “Update community data” downloads and reads the current state of the shared
-    database from 8bitcavern.de (address in ⚙). At start, Breadbin checks at most once a week whether there is a
+    database from 8bitcavern.de (server selectable in ⚙). At start, Breadbin checks at most once a week whether there is a
     new state and reads it (can be switched off in ⚙). “Prepare contribution …” writes the details you wrote yourself into a folder
-    in the database layout – for example the working copy of your fork; from there you submit them as a pull
+    in the database layout – for example the working copy of your fork of <code>github.com/sedorrr/breadbin-db</code>; from there you submit them as a pull
     request. Easier, without a GitHub account: <b>“Submit contribution …”</b> sends them to the contribution server on
     8bitcavern.de, where they are reviewed and then added to the community data. Breadbin remembers what was already
     submitted and next time sends only what is new or changed (a checkbox in the dialog sends everything again). In ⚙ you choose
@@ -252,4 +252,5 @@ for example on a new computer; the previous database stays in the data folder as
 <code>spiele.vor-wiederherstellung.sqlite</code>. Passwords are not included, they live in the keychain.</p>
 <p>Breadbin only goes online for your devices, ScreenScraper (if set up) and 8bitcavern.de, which hosts the community
 data and a small file naming the newest Breadbin version. If a newer version exists, the status bar shows
-“Breadbin … is available” – a click opens the download page. Both can be switched off in ⚙.</p>
+“Breadbin … is available” – a click opens the download page. Both can be switched off in ⚙.
+The server only counts these checks anonymously per day and version; no IP addresses, IDs or cookies are stored.</p>

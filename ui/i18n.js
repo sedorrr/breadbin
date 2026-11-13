@@ -78,7 +78,7 @@ const EN = {
   "Anleitung": "Guide",
   "Über Breadbin": "About Breadbin",
   "Datenordner zeigen": "Show data folder",
-  "Breadbin erfasst C64-Spiele aus Ordnern, Netzlaufwerken und von Ultimate-Geräten, zeigt, was wo liegt, holt Beschreibungen und Bilder und startet Spiele auf einer Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+. Der Name kommt vom Spitznamen des ersten C64-Gehäuses: „Brotkasten“.": "Breadbin catalogs C64 games from folders, network drives and Ultimate devices, shows what is stored where, fetches descriptions and pictures, and starts games on an Ultimate 64, a C64 Ultimate or a 1541 Ultimate II+. The name comes from the nickname of the original C64 case: the “breadbin”.",
+  "Breadbin erfasst C64-Spiele aus Ordnern, Netzlaufwerken und von Ultimate-Geräten, zeigt, was wo liegt, holt Beschreibungen und Bilder und startet Spiele auf einem Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+. Der Name kommt vom Spitznamen des ersten C64-Gehäuses: „Brotkasten“.": "Breadbin catalogs C64 games from folders, network drives and Ultimate devices, shows what is stored where, fetches descriptions and pictures, and starts games on an Ultimate 64, a C64 Ultimate or a 1541 Ultimate II+. The name comes from the nickname of the original C64 case: the “breadbin”.",
   "Lizenz": "License",
   "– Projektseite, Neuigkeiten und weitere C64-Projekte": "– project page, news and more C64 projects",
   "Freie Software unter der": "Free software under the",
@@ -394,7 +394,7 @@ const EN = {
   "Bearbeiten": "Edit",
   "Dateien löschen, die Breadbin zum Starten in den Startordner kopiert hat": "Delete the files Breadbin copied to the launch folder to start games",
   "Startordner leeren": "Empty launch folder",
-  "Noch kein Gerät. Mit „+ Gerät“ eine Ultimate im Netzwerk hinzufügen, um Spiele dort zu starten.":
+  "Noch kein Gerät. Mit „+ Gerät“ einen Ultimate im Netzwerk hinzufügen, um Spiele dort zu starten.":
     "No device yet. Use “+ Device” to add an Ultimate on your network and launch games on it.",
   "an": "on",
   "aus": "off",
@@ -594,7 +594,7 @@ const EN = {
   "Namen ändern sich beim Verlassen des Feldes. Löschen entfernt nur die Liste, nicht die Spiele.": "Names change when you leave the field. Deleting removes only the list, not the games.",
   "Fertig": "Done",
   "Ordner auf dem Gerät": "Folder on the device",
-  "Die Dateien behalten ihren Namen. Im Menü der Ultimate findest du sie dann auch ohne Rechner.": "The files keep their names. You can then find them in the Ultimate menu without a computer.",
+  "Die Dateien behalten ihren Namen. Im Menü des Ultimate findest du sie dann auch ohne Rechner.": "The files keep their names. You can then find them in the Ultimate menu without a computer.",
   "Bibliothek sichern …": "Back up library …",
   "Sicherung zurückspielen …": "Restore backup …",
   "Datenbank mit Quellen, Geräten, eigenen Angaben, Listen, Notizen und Einstellungen samt allen Bildern als eine ZIP-Datei speichern": "Save the database with sources, devices, your own details, lists, notes and settings together with all pictures as one ZIP file",

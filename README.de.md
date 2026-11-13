@@ -7,7 +7,7 @@ Ein Projekt von [8bitcavern.de](https://8bitcavern.de). Kontakt: breadbin@8bitca
 Breadbin ist eine kostenlose Desktop-App für Windows, macOS und Linux, die den Überblick über deine
 Commodore-64-Spiele behält: Sie erfasst lokale Ordner, Netzlaufwerke und die USB-Sticks von
 Ultimate-Geräten, zeigt, was wo liegt, ergänzt Beschreibungen und Bilder und startet Spiele direkt auf
-einer Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+.
+einem Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+.
 
 Die Oberfläche gibt es auf Deutsch und Englisch (nach Systemsprache, umschaltbar in den Einstellungen),
 eine Anleitung ist eingebaut (Knopf „?“ oder F1).
@@ -32,7 +32,7 @@ eine Anleitung ist eingebaut (Knopf „?“ oder F1).
 **Beschreibungen und Bilder**
 - **Eigene Angaben gehen vor:** Titel, Jahr, Herausgeber, Entwickler, Genre, Spieler, Beschreibung und
   eigene Bilder (Titelbild, Spielszene, Verpackung) – für eine oder alle Fassungen eines Spiels
-- **Bildschirmfoto** von einer Ultimate 64 / einem C64 Ultimate über den Videostrom (nur mit Netzwerkkabel)
+- **Bildschirmfoto** von einem Ultimate 64 / einem C64 Ultimate über den Videostrom (nur mit Netzwerkkabel)
 - **Gemeinschaft:** selbst geschriebene Angaben als Austauschdatei teilen und die anderer einlesen –
   zugeordnet über die Prüfsumme, ohne Konto. Geteilte Angaben stehen unter CC BY-SA 4.0.
   „Gemeinschaftsdaten aktualisieren“ lädt die gemeinsame Datenbank von 8bitcavern.de.

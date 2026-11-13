@@ -316,7 +316,7 @@ pub fn device_hints(product: &str, firmware: &str, kernal: &str) -> Vec<String> 
     }
     if kernal.to_ascii_lowercase().contains("jiffy") {
         out.push(tr!(
-            "KERNAL JiffyDOS: Bandabbilder (TAP) laden damit nicht – auch nicht über das Menü der Ultimate. Dafür in den Einstellungen des Geräts den Standard-KERNAL wählen.",
+            "KERNAL JiffyDOS: Bandabbilder (TAP) laden damit nicht – auch nicht über das Menü des Ultimate. Dafür in den Einstellungen des Geräts den Standard-KERNAL wählen.",
             "KERNAL JiffyDOS: tape images (TAP) do not load with it – not even from the Ultimate menu. Choose the standard KERNAL in the device settings for that."
         ));
     }

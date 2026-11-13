@@ -2,6 +2,18 @@
 
 English first, German below each version. / Englisch zuerst, Deutsch jeweils darunter.
 
+## 0.9.1 (2026-11-13)
+
+- Built-in manual updated (server choice for community data, link to the public data repository, note on anonymous
+  counting); the same manual is now also on the website: https://breadbin.8bitcavern.de/anleitung/
+- German texts: correct grammatical gender for the Ultimate devices throughout.
+- The result list no longer fails if it is drawn before the user's lists have loaded.
+- Eingebautes Handbuch aktualisiert (Serverauswahl für Gemeinschaftsdaten, Link zum öffentlichen Daten-Repository,
+  Hinweis zur anonymen Zählung); dasselbe Handbuch steht jetzt auch auf der Webseite:
+  https://breadbin.8bitcavern.de/anleitung/
+- Deutsche Texte: „der Ultimate“ überall richtig.
+- Die Trefferliste bricht nicht mehr ab, wenn sie gezeichnet wird, bevor die eigenen Listen geladen sind.
+
 ## 0.9.0 (2026-11-13) – public beta / öffentliche Beta
 
 - First public release: the source code is now on GitHub (GPL-3.0-or-later), the community data in its own public

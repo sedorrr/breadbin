@@ -1,0 +1,265 @@
+<nav class="help-toc">
+  <a href="#h-start">Erste Schritte</a>
+  <a href="#h-sources">Quellen und Scannen</a>
+  <a href="#h-list">Die Liste</a>
+  <a href="#h-details">Details</a>
+  <a href="#h-devices">Ultimate-Geräte</a>
+  <a href="#h-launch">Starten und Einlegen</a>
+  <a href="#h-scraper">Beschreibungen</a>
+  <a href="#h-fix">Korrigieren</a>
+  <a href="#h-own">Eigene Angaben</a>
+  <a href="#h-cleanup">Aufräumen</a>
+  <a href="#h-mine">Listen und Notizen</a>
+  <a href="#h-share">Teilen</a>
+  <a href="#h-propose">Vorschläge</a>
+  <a href="#h-keys">Tastatur und Maus</a>
+  <a href="#h-trouble">Wenn etwas nicht geht</a>
+  <a href="#h-data">Deine Daten</a>
+</nav>
+
+<p>Breadbin erfasst deine C64-Spiele aus Ordnern, Netzlaufwerken und von den USB-Sticks deiner
+Ultimate-Geräte, zeigt, was wo liegt, holt Beschreibungen und Bilder und startet Spiele direkt auf
+einer Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+.</p>
+
+<h3 id="h-start">Erste Schritte</h3>
+<ol>
+  <li><b>Quelle hinzufügen:</b> In der Seitenleiste bei „Quellen“ auf <b>＋</b> klicken und einen Ordner mit
+    Spielen wählen – gern auch ein eingebundenes Netzlaufwerk. Der Scan startet sofort.</li>
+  <li><b>Gerät hinzufügen</b> (optional): Bei „Ultimate-Geräte“ auf <b>＋</b> klicken. „Im Netz suchen“
+    findet Ultimates im lokalen Netz.</li>
+  <li><b>Beschreibungen einrichten</b> (optional): Oben auf <b>⚙</b> und einen kostenlosen
+    ScreenScraper-Zugang eintragen. Danach in der Karte „Beschreibungen“ auf
+    <b>„Alle ohne Beschreibung holen“</b>.</li>
+  <li><b>Spielen:</b> Ein Spiel in der Liste anklicken, rechts das Gerät wählen und <b>„Starten“</b>.</li>
+</ol>
+
+<h3 id="h-sources">Quellen und Scannen</h3>
+<ul>
+  <li>Erkannt werden <b>PRG, P00, CRT, D64, D71, D81, G64, T64 und TAP</b>, auch in ZIP-Archiven.
+    Disk-Verzeichnisse und T64-Inhalte werden gelesen und sind durchsuchbar.</li>
+  <li><b>↻</b> scannt eine Quelle neu, „Alle scannen“ alle nacheinander. Ein zweiter Scan liest nur
+    Geändertes und ist deshalb schnell. Abbrechen geht unten in der Statusleiste.</li>
+  <li>Ist ein Netzlaufwerk gerade nicht erreichbar, löscht Breadbin <b>keine</b> Einträge.</li>
+  <li><b>Gerätesticks</b> als Quelle: beim Gerät im Menü <b>⋯ → „Ordner als Quelle“</b>. Dateien werden
+    per FTP gelesen; der erste Scan dauert bei vollen Sticks lange.</li>
+  <li><b>Schnellscan</b> (Option je Gerätequelle): Dateien mit gleichem Namen und gleicher Größe wie in
+    einer anderen Quelle werden übernommen statt heruntergeladen – sehr viel schneller. Solche Einträge
+    sind gekennzeichnet; schaltest du den Schnellscan im Menü ⋯ aus, prüft der nächste Scan sie doch.</li>
+  <li>Gleiche Dateien an mehreren Orten erscheinen <b>einmal</b> mit allen Fundorten.</li>
+</ul>
+
+<h3 id="h-list">Die Liste</h3>
+<ul>
+  <li><b>Suche</b> nach Titel, Diskname, Dateinamen im Disk-Verzeichnis, Genre, Herausgeber. Leerzeichen
+    zählen nicht: „spacegun“ findet „Space Gun“.</li>
+  <li><b>Filter</b>: Format, Ansicht (Alle, ★ Favoriten, Zuletzt gestartet), Quelle, „mit Beschreibung“,
+    „mehrfach vorhanden“. Spaltenköpfe sortieren, ein zweiter Klick dreht die Richtung.</li>
+  <li><b>„Gleiche Spiele zusammenfassen“</b>: D64, Modul, Cracks und Arbeitsstände eines Spiels stehen in
+    einer Zeile (×N = Anzahl Fassungen). Erkannt über die ScreenScraper-Spielnummer und den bereinigten
+    Namen – Trainer-Kennungen wie „+10HDG“, Versionen und Datumsangaben zählen dabei nicht.</li>
+  <li><b>💾N</b> am Titel: ein Spiel mit N Disketten oder Seiten.</li>
+  <li>Der ● hinter dem Titel bedeutet „Beschreibung vorhanden“, ★ markiert Favoriten.</li>
+  <li><b>„Zufallsspiel“</b> (oder Taste <kbd>Z</kbd>) zeigt ein zufälliges Spiel aus den aktuellen Treffern – mit Filter
+    oder Liste kombinierbar, etwa „ein zufälliger Klassiker“.</li>
+  <li><b>„Exportieren“</b> speichert die aktuelle Trefferliste als CSV-Datei (z. B. für Excel).</li>
+  <li><b>Mehrere Zeilen markieren</b>: Cmd-Klick (Windows/Linux: Strg-Klick) bzw. Shift-Klick für einen
+    Bereich. Rechts erscheint dann eine Sammelansicht, siehe <a href="#h-fix">Korrigieren</a>.</li>
+</ul>
+
+<h3 id="h-details">Details</h3>
+<p>Rechts stehen Bilder, Beschreibung, Angaben, die <b>Disketten</b> einer Diskettenreihe, alle
+<b>Fassungen</b>, das Disk-Verzeichnis im C64-Stil, alle Speicherorte und die Prüfsummen. Bilder lassen
+sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase64, Lemon64 und im C64-Wiki
+(und die Seite bei ScreenScraper) im Browser.</p>
+
+<h3 id="h-devices">Ultimate-Geräte</h3>
+<ul>
+  <li>Unterstützt: Ultimate 64 (Elite), C64 Ultimate und 1541 Ultimate II+ (dort ungetestet). Nötig sind
+    im Gerätemenü FTP und die „Web Remote Control“.</li>
+  <li><b>Startordner</b>: Dorthin kopiert Breadbin Spiele, die nicht schon auf dem Gerät liegen. Im Menü
+    <b>⋯ → „Startordner leeren“</b> löscht nur Dateien, die Breadbin dort abgelegt hat – Disketten mit Spielstand
+    bleiben liegen.</li>
+  <li><b>Spielstände</b>: Speichert ein Spiel auf eine hinkopierte Diskette, ändert sich die Datei im Startordner.
+    <b>„Spielstand holen …“</b> in den Details eines Diskettenspiels (neben „Starten“) holt die Spielstände dieses
+    Spiels, <b>⋯ → „Spielstände zurückholen …“</b> in der Gerätezeile alle geänderten Disketten – in einen Ordner deiner Wahl, als
+    „Titel (Spielstand 1a2b3c4d).d64“. Ist der Ordner eine Quelle, erscheinen sie nach dem Scan als eigene Fassung.
+    Lag die Diskette schon vorher auf dem Gerät (kein Hinkopieren), speichert das Spiel direkt in diese Datei.</li>
+  <li><b>Auf das Gerät kopieren</b>: Mehrere Zeilen markieren (Cmd- bzw. Strg-Klick, Shift-Klick), dann
+    „Auf Gerät kopieren …“. Die Spiele landen mit ihrem Namen in einem Ordner auf dem Stick – praktisch für
+    Favoriten oder eine eigene Liste, die man ohne Rechner im Menü der Ultimate findet. Was schon auf dem Gerät
+    liegt, wird nicht noch einmal kopiert.</li>
+  <li>Neben dem Gerät stehen <b>Firmware</b> und, wenn nötig, ein <b>⚠</b> mit Hinweisen, was damit nicht geht
+    (etwa zu alte Firmware oder JiffyDOS als KERNAL – damit laden keine Bänder).</li>
+  <li><b>⏻</b> schaltet ein bzw. aus. Einschalten klappt per Wake-on-WiFi, wenn am Gerät „Wake On Wi-Fi“
+    an ist; ein ausgeschaltetes Gerät wird vor einem Start automatisch geweckt.</li>
+  <li>Hat das Gerät ein Netzwerk-Passwort, gehört es in „Bearbeiten“; es liegt im Schlüsselbund.</li>
+</ul>
+
+<h3 id="h-launch">Starten und Einlegen</h3>
+<ul>
+  <li><b>„Starten“</b> beendet, was gerade auf dem C64 läuft (Neustart des C64), und startet das Spiel: PRG und Module direkt, Disketten werden in
+    Laufwerk A eingelegt und wie <code>LOAD"*",8,1</code> + <code>RUN</code> geladen, T64/P00 umgewandelt.</li>
+  <li><b>„Einlegen“</b> legt eine Diskette nur in Laufwerk A, <b>ohne Neustart</b> – für den Diskwechsel
+    im laufenden Spiel.</li>
+  <li><b>Diskettenreihen</b>: Unter „Disketten“ steht jede Disk/Seite in der richtigen Reihenfolge – bei
+    Disk 1 „Starten“, bei jeder „Einlegen“. Erkannt über den Namen („Side 2“, „Disk 1“, „s1“) oder über
+    den Ordner (SUMMER1A, SUMMER1B, SUMMER1C).</li>
+  <li><b>Bänder (TAP)</b> lassen sich nicht starten: Die Ultimate hat dafür keinen Fernsteuerbefehl.</li>
+  <li><b>„Bildschirmfoto“</b> (Ultimate 64 und C64 Ultimate): Was das Gerät gerade zeigt, wird als eigenes
+    Titelbild oder eigene Spielszene gespeichert (320 × 200, ohne Rahmen) – etwa für die
+    Gemeinschaftsdaten. Denselben Knopf gibt es im Dialog „Angaben selbst eintragen“ bei Titelbild und Spielszene.
+    Die Ultimate schickt ihr Bild dafür kurz als Videostrom; andere Empfänger (z. B. eine
+    Jukebox) verlieren ihn dabei. <b>Nur mit Netzwerkkabel:</b> Den Videostrom schickt die Ultimate ausschließlich über
+    Ethernet; ein Gerät, das nur per WLAN im Netz hängt, liefert kein Bild. Kommt trotz Kabel kein Bild an, blockiert
+    womöglich die Firewall eingehende UDP-Pakete.</li>
+  <li><b>Titelbild automatisch</b> (⚙ Einstellungen, Standard aus): Nach „Starten“ wartet die App die eingestellte
+    Zeit (Standard 25 Sekunden) und macht ein Bildschirmfoto als eigenes Titelbild – nur wenn das Spiel noch keines
+    hat. Startest du vorher ein anderes Spiel auf demselben Gerät, gilt die Aufnahme für das neue. Zeigt das Bild
+    noch einen Lader oder ein Intro, ersetze es in den Details.</li>
+</ul>
+
+<h3 id="h-scraper">Beschreibungen von ScreenScraper (freiwillig)</h3>
+<ul>
+  <li>Zusätzliche Angaben und Bilder von ScreenScraper sind freiwillig. Du brauchst ein kostenloses Konto bei <b>screenscraper.fr</b>; Benutzername und Passwort kommen in
+    ⚙ (das Passwort liegt im Schlüsselbund). „Zugang prüfen“ zeigt dein Tageskontingent.</li>
+  <li>Spiele werden über ihre <b>Prüfsummen</b> erkannt, auch bei kryptischen Dateinamen. Optional sucht
+    Breadbin zusätzlich über den <b>Namen</b> – solche Treffer sind mit „bitte prüfen“ gekennzeichnet. Ebenso Treffer, bei
+    denen ScreenScraper keine zur Datei passende Prüfsumme mitliefert (dann hat es meist über den Dateinamen geraten).</li>
+  <li><b>„Alle ohne Beschreibung holen“</b> arbeitet die ganze Sammlung ab, <b>„Nur für die
+    Trefferliste“</b> nur die aktuelle Liste. Breadbin fragt so viele Spiele gleichzeitig ab, wie dein
+    Konto erlaubt (höchstens 4, je Thread 1,2 Sekunden Abstand); meldet ScreenScraper „ausgelastet“, schaltet es
+    zurück. Große Sammlungen brauchen trotzdem Stunden. Abbrechen jederzeit, ein neuer Klick macht weiter.</li>
+  <li>Das Tageskontingent – besonders für Anfragen <b>ohne Treffer</b> – ist begrenzt. Ist es erreicht,
+    hält Breadbin an; am nächsten Tag weitermachen.</li>
+  <li>Während Scan und Abruf bleibt der Rechner wach (abschaltbar in ⚙).</li>
+</ul>
+
+<h3 id="h-fix">Wenn ein Spiel falsch erkannt wurde</h3>
+<ul>
+  <li><b>„Falsches Spiel“</b> verwirft Beschreibung und Bilder; kein späterer Abruf holt sie zurück.</li>
+  <li><b>„Anderes Spiel wählen“</b> bzw. <b>„Spiel von Hand suchen“</b>: Suche nach Name oder Spielnummer,
+    Treffer antippen. Oben stehen Einträge <b>aus deiner Bibliothek</b> – selbst geschrieben, aus der Gemeinschaft oder
+    schon von ScreenScraper geholt; ihre Angaben und Bilder werden übernommen, so landen etwa PRG und D64 eines neuen
+    Spiels in einer Zeile. Darunter die Treffer bei ScreenScraper. Die Wahl überschreibt kein Abruf.</li>
+  <li><b>„Lösen“</b> (an jeder Fassung in der Liste „n Fassungen“): Ein Eintrag, der nur wegen des Namens zu einem
+    fremden Spiel gerutscht ist – etwa ein neues Spiel mit dem Namen eines alten –, steht wieder allein.
+    „Wieder zusammenfassen“ in seinen Details nimmt das zurück.</li>
+  <li><b>„Angaben löschen“</b>: Beschreibung und Bilder weg, der Eintrag gilt als nicht nachgeschlagen.</li>
+  <li><b>In einer Gruppe</b> gelten diese Korrekturen zunächst nur für die gezeigte Fassung. Haben weitere
+    Fassungen dieselbe Zuordnung, fragt Breadbin „Nur diese Fassung“ oder „Alle“; bei „Anderes Spiel wählen“
+    gibt es dafür einen Haken.</li>
+  <li><b>Mehrere auf einmal</b>: Zeilen markieren, dann „Gemeinsam einem Spiel zuordnen“, „Bei
+    ScreenScraper nachschlagen“, „Falsches Spiel“ oder „Angaben löschen“. Tipp: Für Einträge, die
+    in einer Gruppe stecken, vorher „gleiche Spiele zusammenfassen“ ausschalten.</li>
+</ul>
+
+<h3 id="h-own">Eigene Angaben</h3>
+<ul>
+  <li><b>„Angaben selbst eintragen“</b> (auch für mehrere markierte Zeilen): Titel, Jahr, Herausgeber, Entwickler, Genre,
+    Spieler, Beschreibung und eigene Bilder (Titelbild, Spielszene, Verpackung). Eigene Angaben gehen immer vor; kein Abruf
+    und keine Austauschdatei überschreibt sie. Ein falsch eingeordnetes Bild verschiebst du mit „Als Spielszene“
+    bzw. „Als Titelbild“; liegt dort schon eins, tauschen beide den Platz.</li>
+  <li><b>Beschreibung auf Deutsch und Englisch:</b> Der Dialog hat ein Feld je Sprache; eine genügt. Die App zeigt den Text in
+    der Sprache der Oberfläche, fehlt er, den anderen mit Hinweis. Beim Einsenden gehen beide Sprachen mit, so lesen alle
+    Breadbin-Nutzer den Text in ihrer Sprache. Genres stammen aus einer festen Liste und erscheinen ebenfalls übersetzt.</li>
+  <li><b>Selbst geschrieben oder bearbeitet:</b> „Angaben bearbeiten“ beginnt mit dem, was schon da ist. Stammt das von
+    ScreenScraper, gilt dein Eintrag als <i>bearbeitet</i> und wird nicht geteilt – ScreenScraper erlaubt keine Weitergabe
+    seiner Daten. <b>„Eigene Fassung schreiben“</b> beginnt mit leerem Formular; was du dort schreibst, ist deins und kann
+    geteilt werden. Die Details zeigen, welche Art ein Eintrag ist.</li>
+  <li><b>Ansicht „Selbst geschrieben (teilbar)“</b> (Auswahl neben dem Format): alle Spiele, deren Angaben in die
+    Austauschdatei kommen.</li>
+</ul>
+
+<h3 id="h-cleanup">Aufräumen</h3>
+<ul>
+  <li>Unter <b>Bestand → „Aufräumen …“</b>: wie viele Inhalte doppelt liegen und wie viel Platz die Kopien belegen
+    (getrennt: mehrfach in derselben Quelle), wie viele Abbilder beim Scan beschädigt oder unbekannt aufgebaut waren
+    und wie viele Einträge noch keine Angaben haben.</li>
+  <li>„Zeigen“ stellt die Liste passend ein; die Ansichten „Ohne Angaben“ und „Beschädigt / unbekannt“ gibt es auch
+    oben in der Ansichtsauswahl. Die doppelten Dateien lassen sich samt allen Orten als CSV speichern.</li>
+  <li>Breadbin löscht dabei nichts – aufgeräumt wird im Finder bzw. Explorer, danach neu scannen.</li>
+</ul>
+
+<h3 id="h-mine">Listen, Bewertung und Notizen</h3>
+<ul>
+  <li>In den Details unter <b>„Für mich“</b>: eigene Bewertung (1–5 Sterne, nochmal klicken nimmt sie weg),
+    <b>„Durchgespielt“</b> und ein Notizfeld für Codes und Tipps. Gilt für alle Fassungen der Zeile und wird
+    sofort gespeichert. In der Liste stehen ✓ und die Sterne hinter dem Titel.</li>
+  <li><b>Eigene Listen</b> („Partyspiele“, „Mit Kindern“): in den Details anhaken oder mit „Neue Liste …“
+    anlegen; mehrere markierte Zeilen nimmt „In Liste aufnehmen“ auf einmal auf. Die Listen stehen oben in der
+    Ansichtsauswahl; ihr letzter Eintrag „Listen verwalten …“ (auch in den Details) legt Listen an, benennt um oder
+    löscht – mit Nachfrage, die Spiele bleiben dabei in der Bibliothek.</li>
+  <li>Listen und Notizen bleiben auf deinem Rechner und werden nicht geteilt.</li>
+</ul>
+
+<h3 id="h-share">Mit anderen teilen (Gemeinschaft)</h3>
+<p>Unter <b>Teilen</b> in der Seitenleiste speicherst du deine selbst geschriebenen Angaben samt eigenen Bildern als
+  <b>Austauschdatei</b> (ZIP); „Mit anderen teilen“ in den Details führt dorthin. Von ScreenScraper Übernommenes bleibt
+  draußen. Die Zahl neben „Teilen“ zeigt, wie viele Spiele hineinkommen. Ein ScreenScraper-Konto brauchst du dafür nicht.</p>
+<ul>
+  <li><b>Einlesen:</b> Die Angaben passen über die Prüfsumme zu jeder Datei mit demselben Inhalt, egal wie sie bei dir heißt
+    oder wo sie liegt. Angaben zu Dateien, die du (noch) nicht hast, erscheinen, sobald du sie scannst.</li>
+  <li><b>Vorrang:</b> eigene Angaben, dann die <b>bevorzugte Quelle</b>, dann die andere (⚙ → „Bevorzugte Quelle für
+    Angaben“). Standard ist die Gemeinschaft: Austauschdateien ersetzen Angaben von ScreenScraper (dessen Bilder bleiben für
+    fehlende Bildarten), und ein Abruf bei ScreenScraper lässt Gemeinschaftsangaben in Ruhe – außer du klickst bei einem
+    Spiel ausdrücklich „Bei ScreenScraper nachschlagen“. Mit ScreenScraper als bevorzugter Quelle ist es umgekehrt.</li>
+  <li>Übernommene Angaben sind in den Details gekennzeichnet. Änderst du sie, werden es deine eigenen (teilbar).</li>
+  <li><b>Gemeinschaftsdatenbank:</b> „Gemeinschaftsdaten aktualisieren“ lädt den aktuellen Stand der gemeinsamen
+    Datenbank von 8bitcavern.de und liest ihn ein (Adresse in ⚙). Beim Start sieht Breadbin höchstens einmal pro
+    Woche selbst nach, ob es einen neuen Stand gibt, und liest ihn ein (abschaltbar in ⚙). „Beitrag vorbereiten …“ schreibt deine selbst
+    geschriebenen Angaben im Aufbau der Datenbank in einen Ordner – etwa in die Arbeitskopie deines Forks; von dort
+    reichst du sie per Pull Request ein. Einfacher, ohne GitHub-Konto: <b>„Beitrag einsenden …“</b> schickt sie an den
+    Annahme-Server auf 8bitcavern.de, wo sie geprüft und dann in die Gemeinschaftsdaten übernommen werden. Breadbin merkt
+    sich, was schon eingesandt ist, und schickt beim nächsten Mal nur Neues und Geändertes (ein Haken im Dialog sendet
+    alles noch einmal). In ⚙ wählst du für
+    Gemeinschaftsdaten und Beiträge jeweils den Breadbin-Server (Standard) oder einen eigenen Server mit eigener Adresse;
+    Beiträge lassen sich dort auch ganz abschalten („Nicht einsenden“). ScreenScraper ist davon unabhängig und freiwillig. Eine Austauschdatei oder ein als ZIP heruntergeladenes Repository lässt
+    sich auch mit „Austauschdatei einlesen …“ öffnen.</li>
+  <li>Die geteilten Angaben stehen unter der Lizenz CC BY-SA 4.0.</li>
+</ul>
+
+<h3 id="h-propose">Vorschläge an ScreenScraper</h3>
+<p>Mit eingerichtetem Konto: <b>„Bei ScreenScraper vorschlagen“</b> (Spiele mit ScreenScraper-Nummer) schickt Name,
+  Herausgeber, Entwickler, Erscheinungsdatum, Spieleranzahl, Genres, Beschreibung und eigene Bilder an die Moderation.
+  Spieler und Genres wählst du aus den Listen von ScreenScraper; jedes Genre geht als eigener Vorschlag. Der Dialog zeigt
+  den Stand dort, gesendet wird erst nach Rückfrage. Spiele, die ScreenScraper nicht kennt, nimmt es von selbst auf,
+  wenn mehrere Mitglieder sie abfragen.</p>
+
+<h3 id="h-keys">Tastatur und Maus</h3>
+<table class="help-keys">
+  <tr><td>↑ ↓</td><td>vorherige / nächste Zeile</td></tr>
+  <tr><td>Cmd/Strg-Klick</td><td>einzelne Zeilen markieren</td></tr>
+  <tr><td>Shift-Klick</td><td>Bereich markieren</td></tr>
+  <tr><td>Esc</td><td>Markierung aufheben</td></tr>
+  <tr><td>Ziehen am Rand</td><td>Breite von Seitenleiste und Details ändern (Doppelklick: zurück)</td></tr>
+  <tr><td>Klick auf Abschnittstitel</td><td>Quellen, Geräte, Bestand ein-/ausklappen</td></tr>
+</table>
+
+<h3 id="h-trouble">Wenn etwas nicht geht</h3>
+<ul>
+  <li><b>Geräte erscheinen nicht oder immer als „aus“</b> (macOS): Systemeinstellungen → Datenschutz &amp;
+    Sicherheit → <b>Lokales Netzwerk</b> → Breadbin einschalten (bzw. aus- und wieder einschalten) und
+    Breadbin neu starten.</li>
+  <li><b>„Zugang prüfen“ meldet 403 oder Anmeldefehler</b>: Benutzername und Passwort bei ScreenScraper
+    prüfen (Benutzername, nicht die E-Mail-Adresse; mit „Passwort anzeigen“ sieht man, was im Feld steht).
+    Der angezeigte Text sagt, ob dein Konto oder die im Programm eingebaute Entwickler-Kennung abgelehnt
+    wird – Letzteres bitte melden.</li>
+  <li><b>Abruf hält mit „Tageskontingent“ an</b>: normal bei großen Sammlungen; am nächsten Tag weiter.</li>
+  <li><b>Ein Spiel startet nicht</b>: Ist der Startordner auf dem Gerät vorhanden (Stick eingesteckt)?
+    Sind FTP und Web Remote Control am Gerät an?</li>
+</ul>
+
+<h3 id="h-data">Deine Daten</h3>
+<p>Breadbin speichert eine Datenbank und die geladenen Bilder im Datenordner der App (zu öffnen über
+„Über Breadbin“ → „Datenordner zeigen“). Deine Spieldateien werden nur gelesen, nie verändert;
+geschrieben wird nur in den Startordner eines Geräts. Passwörter liegen im Schlüsselbund des Systems,
+nie in der Datenbank.</p>
+<p><b>Sichern:</b> „Über Breadbin“ → „Bibliothek sichern …“ speichert Datenbank (Quellen, Geräte, eigene Angaben,
+Listen, Notizen, Einstellungen) und alle Bilder als eine ZIP-Datei. „Sicherung zurückspielen …“ ersetzt damit die
+jetzige Bibliothek – etwa auf einem neuen Rechner; die bisherige Datenbank bleibt als
+<code>spiele.vor-wiederherstellung.sqlite</code> im Datenordner. Passwörter gehören nicht dazu, sie liegen im
+Schlüsselbund.</p>
+<p>Ins Netz geht Breadbin nur für deine Geräte, ScreenScraper (wenn eingerichtet) und 8bitcavern.de: dort liegen die
+Gemeinschaftsdaten und eine kleine Datei mit der neuesten Breadbin-Fassung. Ist eine neuere Fassung da, steht unten
+in der Statuszeile „Breadbin … ist da“ – ein Klick öffnet die Seite zum Herunterladen. Beides lässt sich in ⚙
+abschalten.</p>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Breadbin – C64-Spielesammlung</title>
+<meta name="description" content="Breadbin ist eine freie Desktop-App für Windows, macOS und Linux: C64-Spiele katalogisieren, beschreiben und direkt auf Ultimate 64, C64 Ultimate oder 1541 Ultimate II+ starten.">
+<link rel="icon" href="../bilder/icon.png">
+<style>
+  /* Hell: Gehäusefarbe des Brotkastens. Dunkel: Startbildschirm des C64. Keine fremden Schriften, keine Zähler. */
+  :root {
+    --bg: #ece6d6; --panel: #f7f3e9; --line: #d5ccb5; --fg: #2b2620; --muted: #6d6455;
+    --accent: #40318d; --accent-fg: #ffffff; --chip: #e2dac6; --key: #5a4f45; --key-fg: #f2ecdc;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #2c2370; --panel: #352a86; --line: #4b3fa3; --fg: #d4ceff; --muted: #a59ee6;
+      --accent: #a99fff; --accent-fg: #221a5c; --chip: #41349a; --key: #1d1650; --key-fg: #d4ceff; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .stripe { height: 6px; background: linear-gradient(90deg, #c0392b 0 20%, #e67e22 20% 40%, #f1c40f 40% 60%, #27ae60 60% 80%, #2c6fbb 80%); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 700 20px ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--accent); text-decoration: none; }
+  .brand img { width: 32px; height: 32px; }
+  nav .links { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 15px; }
+  nav a { color: var(--fg); text-decoration: none; }
+  nav a:hover { color: var(--accent); }
+  .lang { background: none; border: 1px solid var(--line); color: var(--fg); border-radius: 6px; padding: 3px 10px; cursor: pointer; font: inherit; font-size: 14px; }
+  .hero { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; align-items: center; padding-block: 36px 48px; }
+  .hero > * { min-width: 0; }
+  h1 { font: 700 clamp(34px, 6vw, 56px)/1.05 ui-monospace, "SF Mono", Menlo, Consolas, monospace; margin: 0 0 14px; letter-spacing: -1px; text-wrap: balance; }
+  h1 span { color: var(--accent); }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 24px; max-width: 46ch; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--panel); }
+  .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  .meta { font-size: 14px; color: var(--muted); margin-top: 10px; }
+  .shot { width: 100%; max-width: 100%; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); display: block; }
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  h2 { font-size: 28px; margin: 0 0 8px; text-wrap: balance; }
+  .sub { color: var(--muted); margin: 0 0 24px; max-width: 65ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .key { display: inline-block; min-width: 34px; padding: 2px 8px; border-radius: 5px; background: var(--key); color: var(--key-fg);
+    font: 600 13px ui-monospace, Menlo, monospace; text-align: center; box-shadow: inset 0 -2px 0 rgba(0,0,0,.35); margin-bottom: 8px; }
+  .devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .dev { display: flex; justify-content: space-between; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+  .ok { color: #2f8a46; font-weight: 600; } .open { color: #b07a12; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .ok { color: #7be08f; } .open { color: #f0c46a; } }
+  .shots2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  figure { margin: 0; } figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .dl .card a { display: inline-block; margin-top: 10px; }
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 10px 0 0; color: var(--muted); font-size: 15.5px; max-width: 75ch; }
+  footer { border-top: 1px solid var(--line); padding-block: 24px 40px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+  a { color: var(--accent); }
+  @media (max-width: 800px) { .hero { grid-template-columns: 1fr; padding-block: 20px 32px; } nav .links a.hide-s { display: none; } }
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="../bilder/icon.png" alt="">Breadbin</a>
+    <div class="links">
+      <a href="#funktionen" class="hide-s" data-t="nav1">Funktionen</a>
+      <a href="#geraete" class="hide-s" data-t="nav2">Geräte</a>
+      <a href="#gemeinschaft" class="hide-s" data-t="nav3">Gemeinschaft</a>
+      <a href="#download" data-t="nav4">Download</a>
+      <button class="lang" id="lang" type="button">English</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <h1 data-t="h1">Deine C64-Spiele, <span>endlich sortiert.</span></h1>
+      <p class="lede" data-t="lede">Breadbin katalogisiert deine Sammlung von Festplatte, Netzlaufwerk und Ultimate-Stick, ergänzt Beschreibungen und Bilder und startet jedes Spiel mit einem Klick auf deinem Ultimate 64 oder C64 Ultimate.</p>
+      <div class="cta">
+        <a class="btn primary" href="#download" data-t="cta1">Kostenlos herunterladen</a>
+        <a class="btn" href="https://breadbindb.8bitcavern.de/" data-t="cta2">Gemeinschaftsdaten ansehen</a>
+      </div>
+      <div class="meta"><span data-t="meta">Windows · macOS · Linux · frei unter GPL-3.0</span><span id="ver"></span></div>
+    </div>
+    <img class="shot" src="../bilder/breadbin-hauptfenster.png" alt="Breadbin: Spieleliste mit Details, Titelbild und Spielszene" data-ta="alt1">
+  </div>
+
+  <section id="funktionen">
+    <h2 data-t="f-h">Was Breadbin kann</h2>
+    <p class="sub" data-t="f-sub">Für alle, die Tausende Abbilder auf Sticks und Platten verteilt haben und trotzdem wissen wollen, was wo liegt.</p>
+    <div class="grid">
+      <div class="card"><div class="key">F1</div><h3 data-t="c1h">Katalog</h3><p data-t="c1p">PRG, CRT, D64, D71, D81, G64, T64, TAP – auch in ZIP-Archiven. Gleiche Dateien an mehreren Orten erscheinen einmal, Fassungen eines Spiels in einer Zeile.</p></div>
+      <div class="card"><div class="key">F3</div><h3 data-t="c2h">Beschreibungen und Bilder</h3><p data-t="c2p">Eigene Angaben gehen immer vor. Dazu die Gemeinschaftsdaten und – mit eigenem Konto – ScreenScraper.fr, zugeordnet über die Prüfsumme.</p></div>
+      <div class="card"><div class="key">F5</div><h3 data-t="c3h">Starten auf echter Hardware</h3><p data-t="c3p">PRG und Module direkt, Disketten mit kleinem Lader. Diskwechsel mitten im Spiel, ohne Neustart. Gerät per Wake-on-WLAN einschalten.</p></div>
+      <div class="card"><div class="key">F7</div><h3 data-t="c4h">Bildschirmfotos</h3><p data-t="c4p">Was der C64 gerade zeigt, wird per Videostrom zum Titelbild oder zur Spielszene – auf Wunsch automatisch nach dem Start.</p></div>
+      <div class="card"><div class="key">RUN</div><h3 data-t="c5h">Spielstände und Listen</h3><p data-t="c5p">Eigene Listen, Bewertung, Notizen. Spielstände von geänderten Disketten zurückholen, markierte Spiele auf den Stick kopieren.</p></div>
+      <div class="card"><div class="key">C=</div><h3 data-t="c6h">Schnell und schonend</h3><p data-t="c6p">43 859 Dateien: erster Scan 80 Sekunden, danach 1,6 Sekunden. Ein nicht erreichbares Laufwerk löscht nie Einträge.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shots2">
+      <figure><img class="shot" src="../bilder/breadbin-details.png" alt="" loading="lazy"><figcaption data-t="fig1">Details mit Verzeichnis, Fassungen und Start auf dem Gerät</figcaption></figure>
+      <figure><img class="shot" src="../bilder/breadbin-dunkel.png" alt="" loading="lazy"><figcaption data-t="fig2">Folgt der Systemsprache (Deutsch/Englisch) und dem hellen oder dunklen Erscheinungsbild</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="geraete">
+    <h2 data-t="g-h">Geräte</h2>
+    <p class="sub" data-t="g-sub">Breadbin spricht mit den Ultimate-Geräten über ihre Netzwerkschnittstelle (REST und FTP). Ohne Gerät funktioniert alles außer Starten und Bildschirmfotos.</p>
+    <div class="devices">
+      <div class="dev"><span>Ultimate 64 Elite II</span><span class="ok" data-t="ok">geprüft</span></div>
+      <div class="dev"><span>Ultimate 64 Elite</span><span class="ok" data-t="ok">geprüft</span></div>
+      <div class="dev"><span>C64 Ultimate</span><span class="ok" data-t="ok">geprüft</span></div>
+      <div class="dev"><span>1541 Ultimate II+</span><span class="open" data-t="untested">ungetestet</span></div>
+    </div>
+    <p class="meta" data-t="g-note">Bandabbilder (TAP) werden katalogisiert, lassen sich aber noch nicht starten. Bildschirmfotos brauchen ein Netzwerkkabel am Gerät.</p>
+  </section>
+
+  <section id="gemeinschaft">
+    <h2 data-t="k-h">Gemeinschaftsdaten</h2>
+    <p class="sub" data-t="k-sub">Was du selbst schreibst und fotografierst, kannst du mit einem Klick einsenden. Nach einer Prüfung landet es in der freien Breadbin-Datenbank (CC BY-SA 4.0), die sich jede Breadbin-Installation einmal pro Woche holt. Kein Konto nötig, zugeordnet wird über die Prüfsumme der Spieldatei.</p>
+    <a class="btn" href="https://breadbindb.8bitcavern.de/" data-t="k-btn">Statistik und Suche öffnen</a>
+  </section>
+
+  <section id="download">
+    <h2 data-t="d-h">Download</h2>
+    <p class="sub" data-t="d-sub">Breadbin ist kostenlos und quelloffen. Die Pakete sind nicht mit einem bezahlten Zertifikat signiert, deshalb warnt das System beim ersten Start einmal.</p>
+    <div class="dl">
+      <div class="card"><h3>macOS</h3><p data-t="d-mac">Universal (Apple Silicon und Intel), macOS 11 oder neuer.</p><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_universal.dmg" data-dl="dmg">Breadbin.dmg</a></div>
+      <div class="card"><h3>Windows</h3><p data-t="d-win">Windows 10 und 11, 64 Bit. Installer als EXE oder MSI.</p><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64-setup.exe" data-dl="exe">Setup.exe</a> <a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64_en-US.msi" data-dl="msi">.msi</a></div>
+      <div class="card"><h3>Linux</h3><p data-t="d-lin">AppImage für alle Distributionen, dazu deb und rpm.</p><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.AppImage" data-dl="appimage">AppImage</a> <a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.deb" data-dl="deb">.deb</a> <a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin.x86_64.rpm" data-dl="rpm">.rpm</a></div>
+    </div>
+    <h3 style="margin-top:28px" data-t="faq-h">Erster Start</h3>
+    <details><summary>macOS</summary><p data-t="faq-mac">Meldung „Breadbin“ nicht geöffnet mit „Fertig“ schließen. Ab macOS 15: Systemeinstellungen → Datenschutz &amp; Sicherheit → ganz unten „Dennoch öffnen“. Bis macOS 14: Rechtsklick auf die App → „Öffnen“. Danach den Zugriff aufs lokale Netzwerk erlauben, sonst sind keine Ultimate-Geräte erreichbar.</p></details>
+    <details><summary>Windows</summary><p data-t="faq-win">SmartScreen „Der Computer wurde durch Windows geschützt“ → „Weitere Informationen“ → „Trotzdem ausführen“.</p></details>
+    <details><summary>Linux</summary><p data-t="faq-lin">AppImage ausführbar machen (chmod +x Breadbin_*.AppImage) oder das deb- bzw. rpm-Paket installieren.</p></details>
+  </section>
+
+  <footer>
+    <div><span data-t="foot1">Ein Projekt von</span> <a href="https://8bitcavern.de">8bitcavern.de</a> · <span class="mono">breadbin@8bitcavern.de</span></div>
+    <div><a href="../" data-t="foot3">Ausführliche Fassung</a> · <span data-t="foot2">Programm: GPL-3.0 · Gemeinschaftsdaten: CC BY-SA 4.0 · ScreenScraper-Daten unterliegen deren Bedingungen und werden nicht mitgeliefert.</span></div>
+  </footer>
+</div>
+<script>
+"use strict";
+const EN = {
+  nav1: "Features", nav2: "Devices", nav3: "Community", nav4: "Download",
+  h1: "Your C64 games, <span>finally sorted.</span>",
+  lede: "Breadbin catalogs your collection from hard disk, network drive and Ultimate stick, adds descriptions and pictures, and starts any game with one click on your Ultimate 64 or C64 Ultimate.",
+  cta1: "Download for free", cta2: "Browse community data", meta: "Windows · macOS · Linux · free under GPL-3.0",
+  "f-h": "What Breadbin does", "f-sub": "For everyone with thousands of images spread over sticks and disks who still wants to know what is where.",
+  c1h: "Catalog", c1p: "PRG, CRT, D64, D71, D81, G64, T64, TAP – also inside ZIP archives. Identical files in several places show up once, versions of a game share one row.",
+  c2h: "Descriptions and pictures", c2p: "Your own details always come first. Plus the community data and – with your own account – ScreenScraper.fr, matched by checksum.",
+  c3h: "Launch on real hardware", c3p: "PRG and cartridges directly, disks with a small loader. Swap disks mid-game without a restart. Switch the device on via Wake-on-WiFi.",
+  c4h: "Screenshots", c4p: "Whatever the C64 shows becomes a title or in-game picture via the video stream – automatically after launching, if you like.",
+  c5h: "Saved games and lists", c5p: "Your own lists, ratings and notes. Fetch saved games from changed disks, copy marked games to the stick.",
+  c6h: "Fast and careful", c6p: "43,859 files: first scan 80 seconds, afterwards 1.6 seconds. An unreachable drive never deletes entries.",
+  fig1: "Details with directory, versions and launch on the device", fig2: "Follows the system language (English/German) and light or dark appearance",
+  "g-h": "Devices", "g-sub": "Breadbin talks to Ultimate devices over their network interface (REST and FTP). Without a device everything works except launching and screenshots.",
+  ok: "tested", untested: "untested", "g-note": "Tape images (TAP) are catalogued but cannot be started yet. Screenshots need a network cable on the device.",
+  "k-h": "Community data", "k-sub": "What you write and photograph yourself can be submitted with one click. After review it goes into the free Breadbin database (CC BY-SA 4.0), which every Breadbin installation fetches once a week. No account needed, matching uses the checksum of the game file.",
+  "k-btn": "Open statistics and search",
+  "d-h": "Download", "d-sub": "Breadbin is free and open source. The packages are not signed with a paid certificate, so the system warns once on first start.",
+  "d-mac": "Universal (Apple Silicon and Intel), macOS 11 or later.", "d-win": "Windows 10 and 11, 64-bit. Installer as EXE or MSI.", "d-lin": "AppImage for all distributions, plus deb and rpm.",
+  "faq-h": "First start",
+  "faq-mac": "Close the message “Breadbin” not opened with “Done”. macOS 15 and later: System Settings → Privacy & Security → scroll down → “Open Anyway”. Up to macOS 14: right-click the app → “Open”. Then allow access to the local network, otherwise no Ultimate device can be reached.",
+  "faq-win": "SmartScreen “Windows protected your PC” → “More info” → “Run anyway”.",
+  "faq-lin": "Make the AppImage executable (chmod +x Breadbin_*.AppImage) or install the deb or rpm package.",
+  foot1: "A project by", foot3: "Full version", foot2: "App: GPL-3.0 · Community data: CC BY-SA 4.0 · ScreenScraper data is subject to their terms and not distributed.",
+  alt1: "Breadbin: game list with details, title picture and in-game picture",
+};
+let lang = (navigator.language || "de").slice(0, 2) === "de" ? "de" : "en";
+try { lang = localStorage.getItem("lang") || lang; } catch { /* egal */ }
+const orig = new Map();
+function apply() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((el) => {
+    if (!orig.has(el)) orig.set(el, el.innerHTML);
+    el.innerHTML = lang === "en" && EN[el.dataset.t] ? EN[el.dataset.t] : orig.get(el);
+  });
+  document.querySelectorAll("[data-ta]").forEach((el) => {
+    if (!el.dataset.de) el.dataset.de = el.alt;
+    el.alt = lang === "en" ? EN[el.dataset.ta] : el.dataset.de;
+  });
+  document.getElementById("lang").textContent = lang === "en" ? "Deutsch" : "English";
+}
+document.getElementById("lang").addEventListener("click", () => {
+  lang = lang === "en" ? "de" : "en";
+  try { localStorage.setItem("lang", lang); } catch { /* egal */ }
+  apply();
+});
+apply();
+// Aktuelle Fassung aus der Datei, die auch die App beim Start liest (gleicher Webspace).
+fetch("https://breadbindb.8bitcavern.de/version.json", { cache: "no-cache" }).then((r) => r.json()).then((v) => {
+  document.getElementById("ver").textContent = ` · ${lang === "en" ? "version" : "Fassung"} ${v.version}`;
+}).catch(() => {});
+</script>
+</body>
+</html>

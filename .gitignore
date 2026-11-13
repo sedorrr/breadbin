@@ -1,0 +1,9 @@
+/target
+.DS_Store
+/src-tauri/gen
+
+# Versehentlich als Datenbank angelegt, wenn c64scan eine Option als ersten Wert bekommt
+/--*
+__pycache__/
+.claude/
+CLAUDE.md

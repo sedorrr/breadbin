@@ -1,0 +1,27 @@
+# Prüft nur die macOS-Signatur-Einrichtung (ohne Bau): Zertifikat in einen eigenen Schlüsselbund importieren,
+# fürs Signieren vertrauen und zeigen, welche Identitäten macOS sieht. Namen sind Secrets und erscheinen als ***.
+# Checks the macOS signing setup only (no build).
+name: Signatur testen
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Einrichten und prüfen
+        env:
+          CERT: ${{ secrets.MACOS_CERTIFICATE }}
+          CERT_PW: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          CERT_ID: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        shell: bash
+        run: bash .github/macos-signatur.sh
+      - name: Probe signieren
+        env:
+          CERT_ID: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        shell: bash
+        run: |
+          cp /bin/echo "$RUNNER_TEMP/probe"
+          codesign --force --sign "$CERT_ID" "$RUNNER_TEMP/probe" && codesign -dv "$RUNNER_TEMP/probe" 2>&1 | grep -E "Authority|Signature|TeamIdentifier"

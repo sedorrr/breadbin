@@ -1,0 +1,67 @@
+BREADBIN – ZUERST LESEN
+=======================
+
+1. Installieren
+   Breadbin.app auf den Ordner „Programme“ (Applications) ziehen.
+
+2. Erster Start – „Breadbin“ nicht geöffnet
+   Breadbin ist kostenlos und nicht bei Apple notarisiert. macOS meldet deshalb beim
+   ersten Start, es könne die App nicht überprüfen. Bitte NICHT „In den Papierkorb legen“,
+   sondern „Fertig“ klicken und dann:
+
+   macOS 15 (Sequoia) und neuer:
+     a) Systemeinstellungen öffnen → „Datenschutz & Sicherheit“.
+     b) Ganz nach unten scrollen. Dort steht „Breadbin“ wurde blockiert …
+     c) „Dennoch öffnen“ klicken und mit Passwort oder Touch ID bestätigen.
+     d) In der nächsten Meldung „Dennoch öffnen“ (bzw. „Öffnen“) wählen.
+
+   macOS 14 (Sonoma) und älter:
+     Im Ordner „Programme“ mit der rechten Maustaste (oder ctrl-Klick) auf Breadbin
+     klicken → „Öffnen“ → nochmals „Öffnen“.
+
+   Das ist nur einmal nötig. Danach startet Breadbin normal.
+
+   Alternative im Terminal (für Geübte):
+     xattr -dr com.apple.quarantine /Applications/Breadbin.app
+
+3. Weitere Fragen beim ersten Benutzen
+   - „Breadbin möchte Geräte in deinem lokalen Netzwerk finden“: Erlauben – sonst
+     erreicht Breadbin keine Ultimate-Geräte.
+   - Schlüsselbund (nur mit ScreenScraper-Konto): „Immer erlauben“, dann wird das
+     Passwort nicht jedes Mal erfragt.
+
+Anleitung: in Breadbin über „?“ · Website: https://8bitcavern.de · Kontakt: breadbin@8bitcavern.de
+
+
+BREADBIN – READ ME FIRST
+========================
+
+1. Install
+   Drag Breadbin.app onto the “Applications” folder.
+
+2. First launch – “Breadbin” not opened
+   Breadbin is free and not notarised by Apple, so macOS says it cannot verify the app
+   the first time. Do NOT choose “Move to Bin”; click “Done”, then:
+
+   macOS 15 (Sequoia) and later:
+     a) Open System Settings → “Privacy & Security”.
+     b) Scroll to the bottom, where it says “Breadbin” was blocked …
+     c) Click “Open Anyway” and confirm with your password or Touch ID.
+     d) In the next message choose “Open Anyway” (or “Open”).
+
+   macOS 14 (Sonoma) and earlier:
+     In the Applications folder, right-click (or control-click) Breadbin → “Open” →
+     “Open” again.
+
+   You only need to do this once. After that Breadbin starts normally.
+
+   Alternative in Terminal (for experienced users):
+     xattr -dr com.apple.quarantine /Applications/Breadbin.app
+
+3. Other questions on first use
+   - “Breadbin would like to find devices on your local network”: Allow – otherwise
+     Breadbin cannot reach any Ultimate devices.
+   - Keychain (only with a ScreenScraper account): “Always Allow”, so the password is
+     not requested every time.
+
+Manual: “?” inside Breadbin · Website: https://8bitcavern.de · Contact: breadbin@8bitcavern.de

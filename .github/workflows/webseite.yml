@@ -1,0 +1,50 @@
+# Legt die Programm-Webseite (website/) und die Pakete des neuesten Releases auf den eigenen Webspace (FTPS).
+# Die Pakete bekommen feste Namen (download/Breadbin_universal.dmg …), damit die Knöpfe der Webseite nie veralten.
+# Läuft nur, wenn die Secrets gesetzt sind: WEB_HOST, WEB_USER, WEB_PASSWORD, WEB_DIR (Ordner nach der FTP-Anmeldung,
+# z. B. /breadbin). Nie `pwd` oder ausführliche lftp-Ausgaben: lftp zeigt dort die Adresse samt Passwort URL-kodiert.
+#
+# Uploads the website (website/) and the packages of the latest release to our own web space (FTPS), with stable
+# file names. Only runs when the WEB_* secrets are set.
+name: Webseite und Downloads
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  webseite:
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.WEB_HOST }}
+      USER: ${{ secrets.WEB_USER }}
+      PASS: ${{ secrets.WEB_PASSWORD }}
+      DIR: ${{ secrets.WEB_DIR }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secrets vorhanden?
+        id: da
+        run: echo "ok=$([ -n "$HOST" ] && [ -n "$USER" ] && [ -n "$PASS" ] && [ -n "$DIR" ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+      - if: steps.da.outputs.ok == '1'
+        name: Pakete des neuesten Releases holen und umbenennen
+        run: |
+          mkdir -p dl website/download
+          gh release download --dir dl --pattern '*.dmg' --pattern '*.exe' --pattern '*.msi' \
+            --pattern '*.AppImage' --pattern '*.deb' --pattern '*.rpm'
+          ls -la dl
+          cd dl
+          cp *_universal.dmg ../website/download/Breadbin_universal.dmg
+          cp *_x64-setup.exe ../website/download/Breadbin_x64-setup.exe
+          cp *_x64_en-US.msi ../website/download/Breadbin_x64_en-US.msi
+          cp *_amd64.AppImage ../website/download/Breadbin_amd64.AppImage
+          cp *_amd64.deb ../website/download/Breadbin_amd64.deb
+          cp *.x86_64.rpm ../website/download/Breadbin.x86_64.rpm
+          gh release view --json tagName -q .tagName > ../website/download/version.txt
+      - if: steps.da.outputs.ok == '1'
+        name: Hochladen (FTPS)
+        run: |
+          sudo apt-get install -y -qq lftp >/dev/null
+          lftp -u "$USER","$PASS" -e "set cmd:fail-exit true; set ftp:ssl-force true; set ssl:verify-certificate yes; mkdir -p -f $DIR; cd $DIR; mirror -R --no-perms website .; bye" "$HOST"
+      - if: steps.da.outputs.ok != '1'
+        run: echo "Keine WEB_*-Secrets gesetzt – übersprungen."

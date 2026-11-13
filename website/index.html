@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Breadbin – C64-Spielesammlung</title>
+<meta name="description" content="Breadbin katalogisiert C64-Spiele von Festplatte, Netzlaufwerk und Ultimate-Stick, ergänzt Beschreibungen und Bilder und startet sie auf echter Hardware. Frei für Windows, macOS und Linux.">
+<link rel="icon" href="bilder/icon.png">
+<style>
+  /* Alternative mit mehr Inszenierung: Startbildschirm im Monitor, Fortschritt beim Scrollen, Bildwechsel.
+     Gleiche Farbwelt wie die erste Fassung (Brotkasten-Beige / C64-Blau), keine fremden Dienste. */
+  :root {
+    --bg: #ece6d6; --bg2: #e2dac6; --panel: #f7f3e9; --line: #d5ccb5; --fg: #2b2620; --muted: #6d6455;
+    --accent: #40318d; --accent-fg: #fff; --screen: #40318d; --screen-fg: #a59ee6; --border: #7b71d8;
+    --case: #d9cfb3; --case-dark: #b9ad8d; --key: #5a4f45; --key-fg: #f2ecdc; color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1f1a4e; --bg2: #262060; --panel: #2c2575; --line: #3e3596; --fg: #d4ceff; --muted: #a59ee6;
+      --accent: #a99fff; --accent-fg: #1f1a4e; --case: #3a3380; --case-dark: #2c2575; --key: #15113d; --key-fg: #d4ceff; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
+  .mono, h1, h2, .num { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .progress { position: fixed; inset: 0 0 auto; height: 4px; z-index: 20; background: linear-gradient(90deg, #c0392b, #e67e22, #f1c40f, #27ae60, #2c6fbb); transform-origin: 0 50%; transform: scaleX(0); }
+  header.top { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); background: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
+  .brand { display: flex; gap: 10px; align-items: center; font: 700 19px ui-monospace, Menlo, monospace; color: var(--accent); text-decoration: none; }
+  .brand img { width: 30px; height: 30px; }
+  nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+  nav a { color: var(--fg); text-decoration: none; } nav a:hover { color: var(--accent); }
+  .lang { background: none; border: 1px solid var(--line); color: var(--fg); border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 14px; cursor: pointer; }
+
+  /* Bühne: Brotkasten mit Monitor */
+  .stage { padding-block: 48px 64px; display: grid; grid-template-columns: 1fr 1.15fr; gap: 48px; align-items: center; }
+  .stage > * { min-width: 0; }
+  h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.02; margin: 0 0 18px; letter-spacing: -1.5px; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { font-size: 19px; color: var(--muted); max-width: 44ch; margin: 0 0 26px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 12px; font-weight: 650; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--panel); transition: transform .15s; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 10px 24px -12px var(--accent); }
+  .facts { display: flex; gap: 22px; margin-top: 26px; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+  .facts b { display: block; color: var(--fg); font: 700 22px ui-monospace, Menlo, monospace; }
+  .monitor { background: var(--case); border-radius: 22px; padding: 18px 18px 26px; box-shadow: inset 0 -6px 0 var(--case-dark), 0 30px 60px -30px rgba(0,0,0,.5); max-width: 100%; }
+  .bezel { background: #111; border-radius: 14px; padding: 16px; }
+  .screen { position: relative; aspect-ratio: 4 / 3; width: 100%; max-width: 100%; background: var(--border); border-radius: 8px; padding: 6%; overflow: hidden;
+    isolation: isolate; clip-path: inset(0 round 8px); }
+  .inner { position: absolute; inset: 7% 8%; background: var(--screen); color: var(--screen-fg); font: clamp(9px, 1.5vw, 15px)/1.35 ui-monospace, Menlo, monospace; padding: 2%; text-transform: uppercase; overflow: hidden; }
+  .inner pre { margin: 0; white-space: pre-wrap; font: inherit; }
+  .cursor { display: inline-block; width: .7em; height: 1em; background: var(--screen-fg); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  /* Spielbild im Bildbereich des C64 (wie .inner), der Rahmen bleibt sichtbar; 320 × 200 füllt ihn wie am Fernseher. */
+  .shotlayer { position: absolute; inset: 7% 8%; opacity: 0; transition: opacity .8s; background: #000; overflow: hidden; }
+  .shotlayer img { width: 100%; height: 100%; max-width: 100%; object-fit: fill; display: block; image-rendering: pixelated; }
+  .shotlayer.on { opacity: 1; }
+  .app { position: absolute; inset: 0; display: none; grid-template-rows: auto 1fr; background: #f4f2fa; color: #1d1a33;
+    font: clamp(7px, 1.05vw, 11px)/1.35 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+  .app.on { display: grid; }
+  .app-top { display: flex; align-items: center; gap: 8%; padding: 2.5% 3%; background: #2c2370; color: #fff; }
+  .app-top b { font-family: ui-monospace, Menlo, monospace; }
+  .app-search { flex: 1; background: #fff; color: #1d1a33; border-radius: 4px; padding: .3em .6em; min-height: 1.6em; }
+  .app-search::after { content: ""; display: inline-block; width: 1px; height: 1em; background: #1d1a33; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  .app-body { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 0; }
+  .app-list { padding: 2% 0; border-right: 1px solid #dcd9ea; overflow: hidden; }
+  .app-row { display: flex; justify-content: space-between; gap: 6px; padding: .45em 6%; white-space: nowrap; }
+  .app-row span:first-child { overflow: hidden; text-overflow: ellipsis; }
+  .app-row span:last-child { color: #6d6a86; }
+  .app-row { transition: opacity .2s; } .app-row.dim { opacity: .3; }
+  .app-row.sel { background: #40318d; color: #fff; } .app-row.sel span:last-child { color: #d4ceff; }
+  .app-det { padding: 4% 5%; display: grid; gap: .5em; align-content: start; opacity: 0; transition: opacity .3s; }
+  .app-det.on { opacity: 1; }
+  .app-det h4 { margin: 0; font-size: 1.15em; }
+  .app-det .meta { color: #6d6a86; }
+  .app-det .pic { width: 100%; aspect-ratio: 8 / 5; background: #222 center / cover no-repeat; border-radius: 3px; image-rendering: pixelated; }
+  .app-btn { justify-self: start; background: #40318d; color: #fff; border-radius: 4px; padding: .35em .9em; font-weight: 600; transition: transform .1s, background .1s; }
+  .app-btn.down { transform: scale(.94); background: #7869c4; }
+  .app-cursor { position: absolute; width: 4%; left: 85%; top: 85%; transition: left .9s ease-in-out, top .9s ease-in-out; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+  .screen.pc { background: #1b1b1b; }
+  .screen.pc .scan { opacity: .35; }
+  .screen.pc .inner { visibility: hidden; }
+  .screen.loading { animation: stripes .12s steps(2) infinite; }
+  @keyframes stripes { 0% { background: repeating-linear-gradient(0deg, #6c5eb5 0 7px, #c9d487 7px 13px, #352879 13px 19px, #9a6759 19px 26px); }
+    100% { background: repeating-linear-gradient(0deg, #352879 0 5px, #6c5eb5 5px 12px, #9a6759 12px 17px, #c9d487 17px 25px); } }
+  .inner .sel { background: var(--screen-fg); color: var(--screen); }
+  .inner .hd { color: #fff; }
+  .scan { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+  .led { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font: 11px ui-monospace, Menlo, monospace; color: var(--case-dark); }
+  .led i { width: 10px; height: 10px; border-radius: 50%; background: #e33; box-shadow: 0 0 8px #e33; display: inline-block; }
+
+  section { padding-block: 72px; }
+  section.alt { background: var(--bg2); }
+  h2 { font-size: clamp(26px, 4vw, 38px); margin: 0 0 10px; letter-spacing: -.5px; text-wrap: balance; }
+  .sub { color: var(--muted); max-width: 62ch; margin: 0 0 32px; }
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s, transform .7s; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* Ablauf in drei Schritten */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; position: relative; min-width: 0; }
+  .step::before { counter-increment: s; content: counter(s); position: absolute; top: -16px; left: 18px; width: 34px; height: 34px; border-radius: 8px; background: var(--key); color: var(--key-fg); font: 700 16px ui-monospace, Menlo, monospace; display: grid; place-items: center; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); }
+  .step h3 { margin: 10px 0 6px; } .step p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .step code { background: var(--bg2); padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+
+  /* Funktionen als Tastatur */
+  .keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .k { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; min-width: 0; }
+  .cap { width: 52px; height: 52px; border-radius: 9px; background: var(--key); color: var(--key-fg); display: grid; place-items: center; font: 700 14px ui-monospace, Menlo, monospace; box-shadow: inset 0 -5px 0 rgba(0,0,0,.35), 0 2px 0 rgba(0,0,0,.2); }
+  .k h3 { margin: 0 0 4px; font-size: 17px; } .k p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* Galerie */
+  .gallery { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  .gallery figure { margin: 0; } .gallery img { width: 100%; max-width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+  .gallery .side { display: grid; gap: 14px; }
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-top: 18px; scroll-snap-type: x mandatory; }
+  .strip img { height: 120px; aspect-ratio: 8 / 5; object-fit: cover; image-rendering: pixelated; border-radius: 6px; scroll-snap-align: start; border: 1px solid var(--line); }
+
+  /* Geräte */
+  .dev { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .d { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+  .d h3 { margin: 0 0 4px; font-size: 17px; } .d p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .badge { display: inline-block; margin-top: 10px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, #2f8a46 20%, transparent); color: #2f8a46; font-weight: 600; }
+  .badge.open { background: color-mix(in srgb, #b07a12 22%, transparent); color: #b07a12; }
+  @media (prefers-color-scheme: dark) { .badge { color: #7be08f; } .badge.open { color: #f0c46a; } }
+
+  /* Gemeinschaft mit Live-Zahlen */
+  .community { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; align-items: center; }
+  .community > * { min-width: 0; }
+  .counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .cnt { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-align: center; }
+  .num { font-size: 34px; font-weight: 700; color: var(--accent); display: block; }
+  .cnt span { font-size: 13px; color: var(--muted); }
+
+  /* Download */
+  .os { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .o { background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 22px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .o.mine { border-color: var(--accent); box-shadow: 0 16px 34px -22px var(--accent); }
+  .o h3 { margin: 0; } .o p { margin: 0; color: var(--muted); font-size: 15px; }
+  .o .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mine-tag { font-size: 12px; color: var(--accent); font-weight: 700; display: none; } .o.mine .mine-tag { display: inline; }
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-top: 10px; }
+  summary { cursor: pointer; font-weight: 650; } details p { color: var(--muted); margin: 10px 0 0; max-width: 75ch; }
+  footer { padding-block: 32px 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; }
+  a { color: var(--accent); }
+  @media (max-width: 860px) {
+    .stage, .community, .gallery { grid-template-columns: 1fr; }
+    .steps, .os { grid-template-columns: 1fr; gap: 28px; }
+    nav a.hide-s { display: none; }
+  }
+  @media (max-width: 480px) { .counters { grid-template-columns: 1fr 1fr 1fr; } .num { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#"><img src="bilder/icon.png" alt="">Breadbin</a>
+  <nav>
+    <a class="hide-s" href="#ablauf" data-t="n1">So geht's</a>
+    <a class="hide-s" href="#funktionen" data-t="n2">Funktionen</a>
+    <a class="hide-s" href="#gemeinschaft" data-t="n3">Gemeinschaft</a>
+    <a href="#download" data-t="n4">Download</a>
+    <button class="lang" id="lang" type="button">English</button>
+  </nav>
+</div></header>
+
+<div class="wrap stage">
+  <div>
+    <h1 data-t="h1">LOAD"*",8,1 <em>war gestern.</em></h1>
+    <p class="lede" data-t="lede">Breadbin sortiert deine C64-Sammlung, beschreibt jedes Spiel und startet es mit einem Klick auf deinem Ultimate 64 oder C64 Ultimate – Disketten, Module, Cracks, alles an einem Ort.</p>
+    <div class="cta">
+      <a class="btn primary" href="#download" data-t="cta1">Kostenlos laden</a>
+      <a class="btn" href="https://breadbindb.8bitcavern.de/" data-t="cta2">Gemeinschaftsdaten</a>
+    </div>
+    <div class="facts">
+      <div><b>43 859</b><span data-t="f1">Dateien in 80 s</span></div>
+      <div><b>9</b><span data-t="f2">Formate</span></div>
+      <div><b>3</b><span data-t="f3">Systeme</span></div>
+    </div>
+  </div>
+  <div class="monitor" aria-hidden="true">
+    <div class="bezel"><div class="screen">
+      <div class="inner"><pre id="typer"></pre></div>
+      <div class="app" id="app">
+        <div class="app-top"><b>Breadbin</b><span class="app-search" id="app-q"></span></div>
+        <div class="app-body">
+          <div class="app-list" id="app-list"></div>
+          <div class="app-det" id="app-det"></div>
+        </div>
+        <svg class="app-cursor" id="app-cursor" viewBox="0 0 12 18" aria-hidden="true"><path d="M1 1 L1 15 L4.5 11.5 L7 17 L9 16 L6.6 10.6 L11 10.6 Z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg>
+      </div>
+      <div class="shotlayer" id="shot"><img id="shotimg" alt=""></div>
+      <div class="scan"></div>
+    </div></div>
+    <div class="led"><span id="ledlabel">BREADBIN 64</span><span><i></i> POWER</span></div>
+  </div>
+</div>
+
+<section class="alt" id="ablauf"><div class="wrap">
+  <h2 class="reveal" data-t="a-h">In drei Schritten von der Festplatte auf den Bildschirm</h2>
+  <p class="sub reveal" data-t="a-sub">Keine Kommandozeile, keine Ordner abklappern. Breadbin merkt sich, wo was liegt – auch auf dem Stick im Gerät.</p>
+  <div class="steps">
+    <div class="step reveal"><h3 data-t="s1h">Ordner hinzufügen</h3><p data-t="s1p">Festplatte, Netzlaufwerk oder den USB-Stick der Ultimate. Auch ZIP-Archive werden gelesen; gleiche Dateien zählen nur einmal.</p></div>
+    <div class="step reveal"><h3 data-t="s2h">Angaben ergänzen</h3><p data-t="s2p">Beschreibung, Genre, Jahr und Bilder aus den Gemeinschaftsdaten – zugeordnet über die Prüfsumme, nicht über den Dateinamen.</p></div>
+    <div class="step reveal"><h3 data-t="s3h">Starten</h3><p data-t="s3p">Ein Klick, und das Spiel läuft auf echter Hardware. Disketten wechselst du mitten im Spiel, ohne Neustart.</p></div>
+  </div>
+</div></section>
+
+<section id="funktionen"><div class="wrap">
+  <h2 class="reveal" data-t="k-h">Jede Taste eine Funktion</h2>
+  <p class="sub reveal" data-t="k-sub">Was Breadbin für Sammlerinnen und Sammler mit vielen Tausend Abbildern tut.</p>
+  <div class="keys">
+    <div class="k reveal"><div class="cap">F1</div><div><h3 data-t="k1h">Katalog</h3><p data-t="k1p">PRG, CRT, D64, D71, D81, G64, T64, TAP, P00 – Verzeichnisse und Modultypen werden gelesen und sind durchsuchbar.</p></div></div>
+    <div class="k reveal"><div class="cap">F3</div><div><h3 data-t="k2h">Fassungen bündeln</h3><p data-t="k2p">Original, Crack, Moduleumsetzung: eine Zeile pro Spiel, alle Fassungen griffbereit.</p></div></div>
+    <div class="k reveal"><div class="cap">F5</div><div><h3 data-t="k3h">Echte Hardware</h3><p data-t="k3p">Starten, Diskette einlegen, Gerät per WLAN wecken und ausschalten – über die Netzwerkschnittstelle der Ultimate.</p></div></div>
+    <div class="k reveal"><div class="cap">F7</div><div><h3 data-t="k4h">Bildschirmfoto</h3><p data-t="k4p">Titelbild oder Spielszene direkt vom C64 – auf Wunsch automatisch, sobald das Spiel läuft.</p></div></div>
+    <div class="k reveal"><div class="cap">RUN</div><div><h3 data-t="k5h">Zufallsspiel</h3><p data-t="k5p">Taste Z, und Breadbin schlägt dir ein Spiel aus deiner Auswahl vor. Perfekt für lange Abende.</p></div></div>
+    <div class="k reveal"><div class="cap">C=</div><div><h3 data-t="k6h">Listen und Spielstände</h3><p data-t="k6p">Eigene Listen, Sterne, Notizen. Spielstände von geänderten Disketten zurückholen, Bibliothek sichern.</p></div></div>
+  </div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <div class="gallery">
+    <figure class="reveal"><img src="bilder/breadbin-hauptfenster.png" alt="Breadbin-Hauptfenster" loading="lazy"><figcaption data-t="g1">Hauptfenster: Liste, Details, Titelbild und Spielszene</figcaption></figure>
+    <div class="side">
+      <figure class="reveal"><img src="bilder/breadbin-details.png" alt="" loading="lazy"><figcaption data-t="g2">Hell oder dunkel – wie dein System</figcaption></figure>
+      <figure class="reveal"><img src="bilder/breadbin-dunkel.png" alt="" loading="lazy"><figcaption data-t="g3">Deutsch und Englisch</figcaption></figure>
+    </div>
+  </div>
+  <div class="strip" id="strip" aria-label="Bildschirmfotos aus den Gemeinschaftsdaten"></div>
+</div></section>
+
+<section id="geraete"><div class="wrap">
+  <h2 class="reveal" data-t="d-h">Für diese Geräte gemacht</h2>
+  <div class="dev">
+    <div class="d reveal"><h3>Ultimate 64 Elite II</h3><p data-t="d1">Starten, Bildschirmfoto, Stick lesen, Wecken per WLAN.</p><span class="badge" data-t="ok">geprüft</span></div>
+    <div class="d reveal"><h3>Ultimate 64 Elite</h3><p data-t="d2">Alle Formate außer Band, Bildschirmfoto über Ethernet.</p><span class="badge" data-t="ok">geprüft</span></div>
+    <div class="d reveal"><h3>C64 Ultimate</h3><p data-t="d3">Starten, Diskwechsel, Bildschirmfoto.</p><span class="badge" data-t="ok">geprüft</span></div>
+    <div class="d reveal"><h3>1541 Ultimate II+</h3><p data-t="d4">Gleicher Weg über REST und FTP; wir suchen Testerinnen und Tester.</p><span class="badge open" data-t="open">ungetestet</span></div>
+  </div>
+</div></section>
+
+<section class="alt" id="gemeinschaft"><div class="wrap community">
+  <div class="reveal">
+    <h2 data-t="c-h">Eine Datenbank, die alle füttern</h2>
+    <p class="sub" data-t="c-sub">Schreib eine Beschreibung, mach ein Bildschirmfoto, klick auf „Beitrag einsenden“. Nach einer kurzen Prüfung haben alle Breadbin-Nutzer deine Angaben – frei unter CC BY-SA 4.0, ohne Konto.</p>
+    <a class="btn" href="https://breadbindb.8bitcavern.de/" data-t="c-btn">Statistik und Suche</a>
+  </div>
+  <div class="counters reveal">
+    <div class="cnt"><span class="num" id="c-games">–</span><span data-t="c1">Einträge</span></div>
+    <div class="cnt"><span class="num" id="c-date">–</span><span data-t="c2">Stand</span></div>
+    <div class="cnt"><span class="num">CC</span><span>BY-SA 4.0</span></div>
+  </div>
+</div></section>
+
+<section id="download"><div class="wrap">
+  <h2 class="reveal" data-t="dl-h">Download</h2>
+  <p class="sub reveal"><span data-t="dl-sub">Kostenlos und quelloffen (GPL-3.0).</span> <span id="ver"></span></p>
+  <div class="os">
+    <div class="o reveal" data-os="mac"><h3>macOS <span class="mine-tag" data-t="mine">· dein System</span></h3><p data-t="o1">Universal für Apple Silicon und Intel, ab macOS 11.</p><div class="row"><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_universal.dmg">.dmg</a></div></div>
+    <div class="o reveal" data-os="win"><h3>Windows <span class="mine-tag" data-t="mine">· dein System</span></h3><p data-t="o2">Windows 10 und 11, 64 Bit.</p><div class="row"><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64-setup.exe">Setup.exe</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64_en-US.msi">.msi</a></div></div>
+    <div class="o reveal" data-os="lin"><h3>Linux <span class="mine-tag" data-t="mine">· dein System</span></h3><p data-t="o3">AppImage für alle Distributionen, dazu deb und rpm.</p><div class="row"><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.AppImage">AppImage</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.deb">.deb</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin.x86_64.rpm">.rpm</a></div></div>
+  </div>
+  <details class="reveal"><summary data-t="q1">Warum warnt mein System beim ersten Start?</summary><p data-t="a1">Die Pakete sind nicht mit einem bezahlten Zertifikat signiert. macOS: Meldung mit „Fertig“ schließen, dann Systemeinstellungen → Datenschutz &amp; Sicherheit → „Dennoch öffnen“ und den Zugriff aufs lokale Netzwerk erlauben. Windows: „Weitere Informationen“ → „Trotzdem ausführen“.</p></details>
+  <details class="reveal"><summary data-t="q2">Brauche ich ein Ultimate-Gerät?</summary><p data-t="a2">Nein. Katalog, Beschreibungen, Listen und Gemeinschaftsdaten funktionieren ohne Gerät. Nur Starten und Bildschirmfotos brauchen eine Ultimate im Netz.</p></details>
+  <details class="reveal"><summary data-t="q3">Woher kommen Beschreibungen und Bilder?</summary><p data-t="a3">Aus deinen eigenen Angaben, den Gemeinschaftsdaten und – wenn du willst – von ScreenScraper.fr mit eigenem Konto. ScreenScraper-Inhalte bleiben bei dir und werden nie weitergegeben.</p></details>
+  <details class="reveal"><summary data-t="q4">Zählt Breadbin, wer es nutzt?</summary><p data-t="a4">Nur anonym: Die App prüft höchstens einmal am Tag, ob es eine neue Fassung gibt. Der Server zählt diese Abrufe je Tag und Version, dazu die Downloads der Pakete. IP-Adressen werden nicht gespeichert, nur Tageszahlen; es gibt keine Kennung je Installation und keine Cookies.</p></details>
+</div></section>
+
+<div class="wrap"><footer>
+  <div><span data-t="ft1">Ein Projekt von</span> <a href="https://8bitcavern.de">8bitcavern.de</a> · <span class="mono">breadbin@8bitcavern.de</span></div>
+  <div><a href="schlicht/" data-t="ft2">Schlichte Fassung dieser Seite</a></div>
+</footer></div>
+
+<script>
+"use strict";
+const EN = {
+  n1: "How it works", n2: "Features", n3: "Community", n4: "Download",
+  h1: 'LOAD"*",8,1 <em>is history.</em>',
+  lede: "Breadbin sorts your C64 collection, describes every game and starts it with one click on your Ultimate 64 or C64 Ultimate – disks, cartridges, cracks, all in one place.",
+  cta1: "Download for free", cta2: "Community data", f1: "files in 80 s", f2: "formats", f3: "systems",
+  "a-h": "Three steps from hard disk to screen", "a-sub": "No command line, no hunting through folders. Breadbin remembers where everything is – even on the stick inside the device.",
+  s1h: "Add folders", s1p: "Hard disk, network drive or the Ultimate's USB stick. ZIP archives are read too; identical files count once.",
+  s2h: "Add details", s2p: "Description, genre, year and pictures from the community data – matched by checksum, not by file name.",
+  s3h: "Launch", s3p: "One click and the game runs on real hardware. Swap disks mid-game without a restart.",
+  "k-h": "Every key a feature", "k-sub": "What Breadbin does for collectors with many thousands of images.",
+  k1h: "Catalog", k1p: "PRG, CRT, D64, D71, D81, G64, T64, TAP, P00 – directories and cartridge types are read and searchable.",
+  k2h: "Versions bundled", k2p: "Original, crack, cartridge conversion: one row per game, every version at hand.",
+  k3h: "Real hardware", k3p: "Launch, insert a disk, wake the device over Wi-Fi and switch it off – via the Ultimate's network interface.",
+  k4h: "Screenshot", k4p: "Title screen or in-game picture straight from the C64 – automatically once the game runs, if you like.",
+  k5h: "Random game", k5p: "Press Z and Breadbin suggests a game from your selection. Perfect for long evenings.",
+  k6h: "Lists and saved games", k6p: "Your own lists, stars, notes. Fetch saved games from changed disks, back up the library.",
+  g1: "Main window: list, details, title and in-game picture", g2: "Light or dark – like your system", g3: "English and German",
+  "d-h": "Made for these devices", d1: "Launch, screenshot, read the stick, wake over Wi-Fi.", d2: "All formats except tape, screenshot over Ethernet.",
+  d3: "Launch, disk swap, screenshot.", d4: "Same route via REST and FTP; we are looking for testers.", ok: "tested", open: "untested",
+  "c-h": "A database everyone feeds", "c-sub": "Write a description, take a screenshot, click “Submit contribution”. After a short review every Breadbin user has your details – free under CC BY-SA 4.0, no account.",
+  "c-btn": "Statistics and search", c1: "entries", c2: "updated",
+  "dl-h": "Download", "dl-sub": "Free and open source (GPL-3.0).", mine: "· your system",
+  o1: "Universal for Apple Silicon and Intel, macOS 11 or later.", o2: "Windows 10 and 11, 64-bit.", o3: "AppImage for all distributions, plus deb and rpm.",
+  q1: "Why does my system warn on first start?", a1: "The packages are not signed with a paid certificate. macOS: close the message with “Done”, then System Settings → Privacy & Security → “Open Anyway”, and allow local network access. Windows: “More info” → “Run anyway”.",
+  q2: "Do I need an Ultimate device?", a2: "No. Catalog, descriptions, lists and community data work without a device. Only launching and screenshots need an Ultimate on the network.",
+  q3: "Where do descriptions and pictures come from?", a3: "From your own details, the community data and – if you want – ScreenScraper.fr with your own account. ScreenScraper content stays with you and is never passed on.",
+  q4: "Does Breadbin count who uses it?", a4: "Only anonymously: the app checks at most once a day whether there is a new version. The server counts these requests per day and version, plus package downloads. IP addresses are not stored, only daily totals; there is no per-installation ID and no cookies.",
+  ft1: "A project by", ft2: "Plain version of this page",
+};
+let lang = (navigator.language || "de").slice(0, 2) === "de" ? "de" : "en";
+try { lang = localStorage.getItem("lang") || lang; } catch { /* egal */ }
+const orig = new Map();
+function apply() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((el) => {
+    if (!orig.has(el)) orig.set(el, el.innerHTML);
+    el.innerHTML = lang === "en" && EN[el.dataset.t] ? EN[el.dataset.t] : orig.get(el);
+  });
+  document.getElementById("lang").textContent = lang === "en" ? "Deutsch" : "English";
+}
+document.getElementById("lang").addEventListener("click", () => {
+  lang = lang === "en" ? "de" : "en";
+  try { localStorage.setItem("lang", lang); } catch { /* egal */ }
+  apply(); startTyper();
+});
+apply();
+
+// Eigenes System hervorheben
+const ua = navigator.userAgent;
+const os = /Mac/i.test(ua) ? "mac" : /Win/i.test(ua) ? "win" : /Linux|X11/i.test(ua) ? "lin" : "";
+document.querySelector(`.o[data-os="${os}"]`)?.classList.add("mine");
+
+// Fortschritt beim Scrollen, Einblenden der Abschnitte
+const bar = document.getElementById("progress");
+addEventListener("scroll", () => {
+  const h = document.documentElement;
+  bar.style.transform = `scaleX(${h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)})`;
+}, { passive: true });
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
+document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+// Monitor: erst die Breadbin-Oberfläche (Suchen, Auswählen, „Starten“ klicken), dann das Bild des C64 (Laden mit
+// Rahmenstreifen, danach die Spielszene). Spiele und Bilder kommen aus den Gemeinschaftsdaten.
+const typer = document.getElementById("typer"), shot = document.getElementById("shot"), shotimg = document.getElementById("shotimg");
+const screenEl = document.querySelector(".screen"), appEl = document.getElementById("app"), led = document.getElementById("ledlabel");
+const qEl = document.getElementById("app-q"), listEl = document.getElementById("app-list"), detEl = document.getElementById("app-det");
+const cur = document.getElementById("app-cursor");
+let games = [], timer = null, gen = 0, round = 0;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const FALLBACK = [["Boulder Dash", "1984", "First Star"], ["Impossible Mission", "1984", "Epyx"], ["The Great Giana Sisters", "1987", "Rainbow Arts"],
+  ["Paradroid", "1985", "Hewson"], ["Uridium", "1986", "Hewson"], ["Wizball", "1987", "Ocean"], ["Pirates!", "1987", "MicroProse"],
+  ["Bruce Lee", "1984", "Datasoft"]].map(([t, y, p]) => ({ t, y, p, title: "", scene: "" }));
+const esc = (x) => String(x ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const wait = (ms, my) => new Promise((res, rej) => { timer = setTimeout(() => (my === gen ? res() : rej()), ms); });
+
+function pickRound() {
+  const pool = games.length >= 6 ? games : FALLBACK;
+  const target = pool[round % pool.length];
+  const others = pool.filter((g) => g !== target).sort(() => Math.random() - .5).slice(0, 5);
+  const list = [...others, target].sort((a, b) => a.t.localeCompare(b.t));
+  return { list, target };
+}
+function rows(list, q, sel) {
+  const ql = q.toLowerCase();
+  return list.map((g) => `<div class="app-row${g === sel ? " sel" : ""}${ql && !g.t.toLowerCase().includes(ql) ? " dim" : ""}"><span>${esc(g.t)}</span><span>${esc(g.y)}</span></div>`).join("");
+}
+function details(g) {
+  const pic = g.title || g.scene;
+  return `<h4>${esc(g.t)}</h4><div class="meta">${esc([g.y, g.p].filter(Boolean).join(" · "))}</div>
+    <div class="pic" style="${pic ? `background-image:url('${esc(pic)}')` : ""}"></div>
+    <div class="app-btn" id="app-btn">${lang === "en" ? "Launch" : "Starten"}</div>`;
+}
+function moveCursorTo(el) {
+  const a = appEl.getBoundingClientRect(), b = el.getBoundingClientRect();
+  cur.style.left = `${((b.left + b.width * .45 - a.left) / a.width) * 100}%`;
+  cur.style.top = `${((b.top + b.height * .55 - a.top) / a.height) * 100}%`;
+}
+async function scene(my) {
+  const { list, target } = pickRound(); round++;
+  // 1. Breadbin
+  screenEl.classList.add("pc"); screenEl.classList.remove("loading"); shot.classList.remove("on");
+  appEl.classList.add("on"); led.textContent = "BREADBIN"; detEl.classList.remove("on");
+  cur.style.transition = "none"; cur.style.left = "85%"; cur.style.top = "88%"; void cur.offsetWidth; cur.style.transition = "";
+  let q = ""; qEl.textContent = ""; listEl.innerHTML = rows(list, "", null);
+  const word = target.t.split(/[\s:]/)[0].slice(0, 10);
+  if (reduce) { qEl.textContent = word; listEl.innerHTML = rows(list, word, target); detEl.innerHTML = details(target); detEl.classList.add("on"); return; }
+  await wait(700, my);
+  for (const ch of word) { q += ch; qEl.textContent = q; listEl.innerHTML = rows(list, q, null); await wait(120, my); }
+  await wait(350, my);
+  listEl.innerHTML = rows(list, q, target); detEl.innerHTML = details(target); detEl.classList.add("on");
+  await wait(600, my);
+  const btn = document.getElementById("app-btn"); moveCursorTo(btn);
+  await wait(1000, my); btn.classList.add("down"); await wait(220, my); btn.classList.remove("down");
+  await wait(500, my);
+  // 2. C64: Laden, dann die Spielszene
+  appEl.classList.remove("on"); screenEl.classList.remove("pc"); led.textContent = "C64";
+  typer.innerHTML = `\nSEARCHING FOR ${esc(target.t.toUpperCase().slice(0, 22))}\nLOADING\n<span class="cursor"></span>`;
+  screenEl.classList.add("loading");
+  await wait(1700, my);
+  screenEl.classList.remove("loading");
+  const img = target.scene || target.title;
+  if (img) { shotimg.src = img; shot.classList.add("on"); await wait(3400, my); }
+  else { typer.innerHTML = "\nREADY.\nRUN\n<span class=\"cursor\"></span>"; await wait(1500, my); }
+  scene(my).catch(() => {});
+}
+let dataReady;
+const dataSeen = new Promise((res) => { dataReady = res; });
+function startTyper() {
+  const my = ++gen; clearTimeout(timer);
+  // Erste Runde erst mit den echten Daten (höchstens 2,5 s warten, sonst mit der eingebauten Liste).
+  Promise.race([dataSeen, new Promise((r) => setTimeout(r, 2500))]).then(() => { if (my === gen) scene(my).catch(() => {}); });
+}
+
+// Live-Zahlen und Bilder aus den Gemeinschaftsdaten (breadbindb.8bitcavern.de erlaubt fetch per .htaccess)
+fetch("https://breadbindb.8bitcavern.de/spiele.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => {
+  document.getElementById("c-games").textContent = d.games.length.toLocaleString(lang === "en" ? "en-GB" : "de-DE");
+  document.getElementById("c-date").textContent = new Date(d.created * 1000).toLocaleDateString(lang === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "2-digit" });
+  const imgs = d.games.map((g) => g.ss || g.sstitle).filter(Boolean).map((p) => "https://breadbindb.8bitcavern.de/" + p);
+  for (let i = imgs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [imgs[i], imgs[j]] = [imgs[j], imgs[i]]; }
+  const base = "https://breadbindb.8bitcavern.de/";
+  games = d.games.filter((g) => g.sstitle || g.ss).map((g) => ({ t: g.t, y: g.y || "", p: g.p || "",
+    title: g.sstitle ? base + g.sstitle : "", scene: g.ss ? base + g.ss : "" }));
+  for (let i = games.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [games[i], games[j]] = [games[j], games[i]]; }
+  document.getElementById("strip").innerHTML = imgs.slice(0, 16).map((s) => `<img src="${s}" alt="" loading="lazy">`).join("");
+  dataReady();
+}).catch(() => dataReady());
+fetch("https://breadbindb.8bitcavern.de/version.json", { cache: "no-cache" }).then((r) => r.json()).then((v) => {
+  document.getElementById("ver").textContent = (lang === "en" ? "Current version " : "Aktuelle Fassung ") + v.version + ".";
+}).catch(() => {});
+startTyper();
+</script>
+</body>
+</html>

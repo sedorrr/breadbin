@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Breadbin – C64 Game Library</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside id="sidebar">
+    <header class="brand">
+      <img src="icon.png" alt="" width="36" height="36">
+      <h1>Breadbin <span class="tagline">C64 Game Library</span></h1>
+      <button id="btn-help" class="icon-btn" title="Anleitung" aria-label="Anleitung">?</button>
+      <button id="btn-about" class="icon-btn" title="Über Breadbin" aria-label="Über Breadbin">ⓘ</button>
+      <button id="btn-settings" class="icon-btn" title="Einstellungen: Sprache, ScreenScraper-Zugang" aria-label="Einstellungen">⚙</button>
+    </header>
+    <section class="card" id="ss-card">
+      <div class="section-head">
+        <h2>Beschreibungen</h2>
+        <button class="small open-settings" title="Zugang zu ScreenScraper einrichten">Zugang</button>
+      </div>
+      <div class="progress" aria-hidden="true"><div class="bar" id="ss-bar"></div></div>
+      <p id="ss-progress-text" class="meta"></p>
+      <p id="scraper-state" class="meta"></p>
+      <div class="stack">
+        <button id="btn-scrape-all" class="primary" title="Alle Einträge ohne Beschreibung bei ScreenScraper nachschlagen">Alle ohne Beschreibung holen</button>
+        <button id="btn-scrape-list" title="Beschreibungen und Bilder für alle Einträge der aktuellen Trefferliste holen">Nur für die Trefferliste</button>
+      </div>
+    </section>
+    <section class="side" data-key="sources">
+      <div class="section-head">
+        <button class="fold" aria-expanded="true"><span class="chev">▾</span><h2>Quellen</h2><span class="count" id="sources-count"></span></button>
+        <button id="btn-scan-all" class="small" title="Alle Quellen nacheinander scannen">Alle scannen</button>
+        <button id="btn-add" class="small icon" title="Ordner oder Netzlaufwerk hinzufügen" aria-label="Ordner oder Netzlaufwerk hinzufügen">＋</button>
+      </div>
+      <div class="section-body"><ul id="sources" class="rows"></ul></div>
+    </section>
+    <section class="side" data-key="devices">
+      <div class="section-head">
+        <button class="fold" aria-expanded="true"><span class="chev">▾</span><h2>Ultimate-Geräte</h2><span class="count" id="devices-count"></span></button>
+        <button id="btn-add-device" class="small icon" title="Ultimate 64, C64 Ultimate oder 1541 Ultimate II+ hinzufügen" aria-label="Gerät hinzufügen">＋</button>
+      </div>
+      <div class="section-body"><ul id="devices" class="rows list"></ul></div>
+    </section>
+    <section class="side collapsed" data-key="share">
+      <div class="section-head">
+        <button class="fold" aria-expanded="false"><span class="chev">▾</span><h2>Teilen</h2><span class="count" id="share-count"></span></button>
+      </div>
+      <div class="section-body">
+        <p class="meta">Selbst geschriebene Angaben und eigene Bilder als Datei weitergeben oder die Datei eines anderen einlesen. Von ScreenScraper Übernommenes bleibt draußen.</p>
+        <div class="stack">
+          <button id="btn-share-export" title="Selbst geschriebene Angaben und eigene Bilder als Austauschdatei speichern">Austauschdatei speichern …</button>
+          <button id="btn-share-import" title="Austauschdatei eines anderen einlesen; eigene Angaben bleiben unangetastet">Austauschdatei einlesen …</button>
+        </div>
+        <h4 class="share-sub">Gemeinschaftsdatenbank <a href="#" id="community-web" class="small-link" hidden title="Statistik und Suche der Gemeinschaftsdaten im Browser öffnen">im Web ansehen</a></h4>
+        <div class="stack">
+          <button id="btn-community-update" title="Den aktuellen Stand der Gemeinschaftsdatenbank herunterladen und einlesen (Adresse in den Einstellungen)">Gemeinschaftsdaten aktualisieren</button>
+          <button id="btn-community-submit" hidden title="Selbst geschriebene Angaben direkt an den Server der Gemeinschaftsdatenbank schicken; dort werden sie geprüft">Beitrag einsenden …</button>
+          <button id="btn-community-contribute" title="Selbst geschriebene Angaben im Aufbau der Gemeinschaftsdatenbank in einen Ordner schreiben, z. B. in die Arbeitskopie eines Forks – dann per Pull Request einreichen">Beitrag vorbereiten …</button>
+        </div>
+      </div>
+    </section>
+    <section class="side collapsed" data-key="stats">
+      <div class="section-head">
+        <button class="fold" aria-expanded="false"><span class="chev">▾</span><h2>Bestand</h2><span class="count" id="stats-count"></span></button>
+      </div>
+      <div class="section-body"><div id="stats"></div>
+        <button id="btn-cleanup" class="small" title="Doppelte Dateien, beschädigte Abbilder und Einträge ohne Angaben im Überblick">Aufräumen …</button></div>
+    </section>
+  </aside>
+  <div class="splitter" id="split-sidebar" title="Ziehen: Breite ändern · Doppelklick: zurücksetzen"></div>
+
+  <dialog id="settings">
+    <form method="dialog" id="settings-form">
+      <h3>Einstellungen</h3>
+      <label>Sprache der Oberfläche
+        <select id="ui-language">
+          <option value="auto">Automatisch (Systemsprache)</option>
+          <option value="de" translate="no">Deutsch</option>
+          <option value="en" translate="no">English</option>
+        </select>
+      </label>
+      <p class="meta">Wird nach dem Speichern sofort übernommen.</p>
+      <label class="inline"><input type="checkbox" id="keep-awake">
+        Rechner während Scan und Abruf nicht einschlafen lassen (Bildschirm darf aus)</label>
+      <label>Bevorzugte Quelle für Angaben
+        <select id="preferred-source">
+          <option value="community">Gemeinschaft (Austauschdateien)</option>
+          <option value="screenscraper">ScreenScraper</option>
+        </select>
+      </label>
+      <p class="meta">Selbst eingetragene Angaben gehen immer vor. Die bevorzugte Quelle ersetzt beim Einlesen bzw. Abrufen die andere; die andere füllt nur Lücken.</p>
+      <label>Gemeinschaftsdaten von
+        <select id="community-src">
+          <option value="std">Breadbin-Server (8bitcavern.de)</option>
+          <option value="own">Eigener Server …</option>
+        </select>
+      </label>
+      <label id="community-url-row" hidden>Adresse der Gemeinschaftsdaten <input id="community-url" autocomplete="off" spellcheck="false" placeholder="https://…/breadbin-db.zip"></label>
+      <label>Beiträge einsenden an
+        <select id="submit-src">
+          <option value="std">Breadbin-Server (8bitcavern.de)</option>
+          <option value="own">Eigener Server …</option>
+          <option value="off">Nicht einsenden</option>
+        </select>
+      </label>
+      <label id="submit-url-row" hidden>Adresse für Beiträge <input id="submit-url" autocomplete="off" spellcheck="false" placeholder="https://…/beitrag.php"></label>
+      <label class="inline"><input type="checkbox" id="community-auto">
+        Gemeinschaftsdaten beim Start selbst aktualisieren (höchstens einmal pro Woche)</label>
+      <label class="inline"><input type="checkbox" id="update-check">
+        Beim Start nach neuen Breadbin-Fassungen sehen (8bitcavern.de)</label>
+      <label class="inline"><input type="checkbox" id="auto-title">
+        Nach dem Starten ein Titelbild aufnehmen, wenn das Spiel noch keines hat</label>
+      <label>Wartezeit bis zur Aufnahme in Sekunden <input type="number" id="auto-title-delay" min="5" max="180" step="5"></label>
+      <p class="meta">Nur Ultimate 64 und C64 Ultimate mit Netzwerkkabel. Das Bild wird als eigenes Titelbild gespeichert und lässt sich in den Details ersetzen.</p>
+      <h4>ScreenScraper (freiwillig)</h4>
+      <p class="meta">
+        Zusätzliche Beschreibungen, Genres und Bilder von ScreenScraper.fr. Dafür brauchst du ein
+        kostenloses Benutzerkonto: <a href="#" data-url="https://www.screenscraper.fr/membreinscription.php">dort registrieren</a>.
+        Das Passwort wird im Schlüsselbund deines Systems gespeichert.
+      </p>
+      <label>Benutzername <input id="ss-user" autocomplete="username"></label>
+      <label>Passwort <input id="ss-password" type="password" autocomplete="current-password"></label>
+      <label class="inline"><input type="checkbox" id="ss-show-password"> Passwort anzeigen</label>
+      <label>Sprache der Beschreibungen
+        <select id="ss-language">
+          <option value="de">Deutsch</option>
+          <option value="en">Englisch</option>
+          <option value="fr">Französisch</option>
+          <option value="es">Spanisch</option>
+          <option value="it">Italienisch</option>
+        </select>
+      </label>
+      <label>Gleichzeitige Abfragen
+        <select id="ss-threads">
+          <option value="0">Automatisch (laut Konto, höchstens 4)</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+      </label>
+      <label class="inline"><input type="checkbox" id="ss-name-fallback">
+        Ohne Treffer über die Prüfsumme auch über den Namen suchen (findet mehr, kann aber danebenliegen)</label>
+      <fieldset id="ss-dev">
+        <legend>Entwickler-Kennung</legend>
+        <p class="meta">Wird für diese App einmal bei ScreenScraper beantragt. In fertigen Paketen ist sie
+          schon enthalten; dann erscheinen diese Felder nicht.</p>
+        <label>devid <input id="ss-devid" autocomplete="off"></label>
+        <label>devpassword <input id="ss-devpassword" type="password" autocomplete="off"></label>
+        <p class="meta">Programmname bei der Beantragung: <code id="ss-softname"></code></p>
+      </fieldset>
+      <p id="ss-result" class="meta"></p>
+      <div class="dialog-buttons">
+        <button type="button" id="ss-test">Zugang prüfen</button>
+        <span class="spacer"></span>
+        <button type="button" id="ss-close">Schließen</button>
+        <button type="button" id="ss-save" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <main>
+    <div id="toolbar">
+     <div class="toolbar-row">
+      <input id="search" type="search" placeholder="Suchen: Titel, Diskname, Datei im Verzeichnis …" autofocus>
+      <label class="check" title="Verschiedene Dateien desselben Spiels (D64, CRT, Cracks …) als eine Zeile zeigen – über die ScreenScraper-Spielnummer und den bereinigten Titel"><input type="checkbox" id="group"> gleiche Spiele zusammenfassen</label>
+      <span id="count"></span>
+     </div>
+     <div class="toolbar-row filters">
+      <select id="format" title="Format">
+        <option value="">Alle Formate</option>
+        <option>D64</option><option>D71</option><option>D81</option><option>G64</option>
+        <option>CRT</option><option>PRG</option><option>P00</option><option>T64</option><option>TAP</option>
+      </select>
+      <select id="view" title="Ansicht">
+        <option value="">Alle</option>
+        <option value="fav">★ Favoriten</option>
+        <option value="recent">Zuletzt gestartet</option>
+        <option value="shareable" title="Spiele mit selbst geschriebenen Angaben – sie kommen beim Teilen in die Austauschdatei">Selbst geschrieben (teilbar)</option>
+        <option value="nometa" title="Einträge ohne Beschreibung: nicht erkannt oder noch nicht nachgeschlagen">Ohne Angaben</option>
+        <option value="damaged" title="Abbilder, die beim Scan als beschädigt oder unbekannt aufgebaut erkannt wurden">Beschädigt / unbekannt</option>
+      </select>
+      <select id="source-filter" title="Nur Einträge aus dieser Quelle"><option value="">Alle Quellen</option></select>
+      <label class="check"><input type="checkbox" id="only-meta"> mit Beschreibung</label>
+      <label class="check"><input type="checkbox" id="only-dupes"> mehrfach vorhanden</label>
+      <span class="spacer"></span>
+      <button id="btn-random" class="small" title="Ein zufälliges Spiel aus den aktuellen Treffern zeigen (Taste Z)">Zufallsspiel</button>
+      <button id="btn-export" class="small" title="Alle Treffer der aktuellen Suche als CSV-Datei speichern (z. B. für Excel)">Exportieren</button>
+     </div>
+    </div>
+    <div id="content">
+      <div id="list-wrap">
+        <table id="list">
+          <thead>
+            <tr><th class="star-col" title="Favorit"></th><th data-sort="title">Titel</th><th data-sort="year">Jahr</th><th data-sort="publisher">Herausgeber</th><th data-sort="genre">Genre</th><th data-sort="format">Format</th><th>Inhalt</th><th data-sort="locations" title="Anzahl Speicherorte">Orte</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p id="empty" hidden></p>
+      </div>
+      <div class="splitter" id="split-details" title="Ziehen: Breite ändern · Doppelklick: zurücksetzen" hidden></div>
+      <section id="details" hidden></section>
+    </div>
+    <footer id="status">
+      <span id="status-text">Bereit</span>
+      <button id="btn-errors" class="link" hidden>Fehler anzeigen</button>
+      <button id="btn-update" class="link" hidden></button>
+      <span class="spacer"></span>
+      <button id="btn-cancel" hidden>Abbrechen</button>
+    </footer>
+  </main>
+
+  <dialog id="device-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3 id="dev-title">Ultimate-Gerät</h3>
+      <p class="meta">Ultimate 64, C64 Ultimate oder 1541 Ultimate II+ im Netzwerk. Nötig sind FTP und die
+        REST-Schnittstelle („Web Remote Control Service“, ab Firmware 3.11).</p>
+      <div class="dialog-buttons"><button type="button" id="dev-discover">Im Netz suchen</button></div>
+      <ul id="dev-found" class="found"></ul>
+      <label>Adresse (IP oder Name) <input id="dev-host" placeholder="192.168.1.64" autocomplete="off"></label>
+      <label>Netzwerk-Passwort (nur falls am Gerät gesetzt)
+        <input id="dev-password" type="password" autocomplete="off"></label>
+      <div class="dialog-buttons"><button type="button" id="dev-probe">Verbinden und prüfen</button></div>
+      <p id="dev-result" class="meta"></p>
+      <label>Name <input id="dev-name" autocomplete="off"></label>
+      <label>Startordner auf dem Gerät
+        <input id="dev-upload" list="dev-drives" autocomplete="off"></label>
+      <datalist id="dev-drives"></datalist>
+      <p class="meta">Spiele, die nicht auf dem Gerät liegen, werden zum Starten dorthin kopiert.</p>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button type="button" id="dev-close">Abbrechen</button>
+        <button type="button" id="dev-save" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="folder-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3>Ordner auf dem Gerät als Quelle</h3>
+      <p class="meta" id="folder-device"></p>
+      <label>Ordner <input id="folder-path" placeholder="/USB0/Spiele" autocomplete="off"></label>
+      <div class="browser">
+        <div class="crumbs" id="folder-crumbs"></div>
+        <ul id="folder-list"></ul>
+      </div>
+      <p class="meta">Der erste Scan lädt jede Datei einmal über das Netz (etwa 300 KB/s) – bei vollen
+        Sticks dauert das Stunden. Spätere Scans lesen nur Geändertes.</p>
+      <label class="inline"><input type="checkbox" id="folder-quick" checked>
+        Schnellscan: Dateien, die mit gleichem Namen und gleicher Größe schon in einer anderen Quelle
+        liegen, von dort übernehmen statt herunterladen. Viel schneller, kann aber bei gleich großen,
+        verschiedenen Dateien danebenliegen (etwa ein D64 mit Spielstand). Solche Einträge sind gekennzeichnet.</label>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button type="button" id="folder-close">Abbrechen</button>
+        <button type="button" id="folder-add" class="primary">Hinzufügen und scannen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="info-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3 id="info-title"></h3>
+      <pre id="info-text"></pre>
+      <div class="dialog-buttons"><span class="spacer"></span><button class="primary">Schließen</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="copy-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3>Auf Gerät kopieren</h3>
+      <p class="meta" id="copy-info"></p>
+      <label>Gerät <select id="copy-device"></select></label>
+      <label>Ordner auf dem Gerät <input id="copy-target" autocomplete="off" spellcheck="false"></label>
+      <p class="meta">Die Dateien behalten ihren Namen. Im Menü der Ultimate findest du sie dann auch ohne Rechner.</p>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button value="cancel" formnovalidate>Abbrechen</button>
+        <button value="ok" class="primary">Kopieren</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="cleanup-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3>Aufräumen</h3>
+      <p class="meta">Breadbin löscht nichts selbst. Die Übersicht führt zu Listen, die du durchgehen oder als CSV speichern kannst.</p>
+      <div id="cleanup-body"></div>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button class="primary">Schließen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="lists-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3>Eigene Listen</h3>
+      <p class="meta">Namen ändern sich beim Verlassen des Feldes. Löschen entfernt nur die Liste, nicht die Spiele.</p>
+      <div id="lists-body"></div>
+      <div class="list-row">
+        <input id="lists-new" placeholder="Neue Liste …">
+        <button type="button" id="lists-add" class="small">Anlegen</button>
+      </div>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button type="button" id="lists-close" class="primary">Fertig</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="submit-dialog" class="form-dialog">
+    <form id="submit-form">
+      <h3>Beitrag einsenden</h3>
+      <p class="meta" id="submit-info"></p>
+      <label>Name für die Namensnennung (freiwillig) <input id="submit-name" autocomplete="nickname" maxlength="100"></label>
+      <label>Hinweis an die Prüfenden (freiwillig) <textarea id="submit-hinweis" rows="3" maxlength="2000"></textarea></label>
+      <label class="check"><input type="checkbox" id="submit-all"> Auch schon eingesandte Spiele noch einmal senden</label>
+      <p class="meta">Mit dem Einsenden stimmst du zu, dass deine Angaben und Bilder unter CC BY-SA 4.0 veröffentlicht werden. Bitte nur Selbsterstelltes.</p>
+      <p id="submit-result" class="meta"></p>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button type="button" id="submit-close">Abbrechen</button>
+        <button class="primary" id="submit-send">Einsenden</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="pick-dialog" class="form-dialog">
+    <form id="pick-form">
+      <h3>Richtiges Spiel wählen</h3>
+      <label>Name (in deiner Bibliothek und bei ScreenScraper) oder Spielnummer bei ScreenScraper
+        <span class="pick-row"><input id="pick-query" autocomplete="off"><button class="primary">Suchen</button></span></label>
+      <p class="meta" id="pick-count"></p>
+      <ul id="pick-list"></ul>
+      <div class="dialog-buttons"><span class="spacer"></span><button type="button" id="pick-close">Abbrechen</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="own-dialog" class="form-dialog">
+    <form id="own-form">
+      <h3 id="own-heading">Angaben selbst eintragen</h3>
+      <p class="meta">Für Spiele, die ScreenScraper nicht kennt – etwa eigene Entwicklungen. Kein Abruf überschreibt sie.
+        <span id="own-count"></span></p>
+      <label>Titel <input id="own-title" autocomplete="off"></label>
+      <div class="own-grid">
+        <label>Jahr <input id="own-year" autocomplete="off" inputmode="numeric"></label>
+        <label>Spieler <input id="own-players" autocomplete="off" placeholder="1-2"></label>
+        <label>Herausgeber <input id="own-publisher" autocomplete="off"></label>
+        <label>Entwickler <input id="own-developer" autocomplete="off"></label>
+      </div>
+      <label>Genre <input id="own-genres" autocomplete="off" placeholder="Action, Shoot'em Up"></label>
+      <label>Beschreibung (Deutsch) <textarea id="own-synopsis" rows="5" lang="de"></textarea></label>
+      <label>Beschreibung (Englisch) <textarea id="own-synopsis_en" rows="5" lang="en"></textarea></label>
+      <p class="meta">Eine Sprache genügt; mit beiden lesen alle Breadbin-Nutzer den Text in ihrer Sprache.</p>
+      <div id="own-images"></div>
+      <div class="dialog-buttons">
+        <button type="button" id="own-clear" class="danger">Eigene Angaben löschen</button>
+        <span class="spacer"></span>
+        <button type="button" id="own-close">Abbrechen</button>
+        <button class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="propose-dialog" class="form-dialog">
+    <form id="propose-form">
+      <h3 id="propose-title">Vorschlag an ScreenScraper</h3>
+      <p class="meta">Gesendet wird mit deinem ScreenScraper-Konto; die Moderatoren prüfen jeden Vorschlag, bevor er
+        erscheint. Angehakt ist, was dort fehlt oder abweicht.</p>
+      <div class="own-grid">
+        <label>Region (für Name, Datum, Bilder)
+          <select id="propose-region">
+            <option value="wor">Welt</option><option value="eu">Europa</option><option value="us">USA</option>
+            <option value="de">Deutschland</option><option value="uk">Großbritannien</option><option value="fr">Frankreich</option>
+            <option value="jp">Japan</option>
+          </select></label>
+        <label>Sprache (für die Beschreibung)
+          <select id="propose-lang">
+            <option value="de">Deutsch</option><option value="en">Englisch</option><option value="fr">Französisch</option>
+            <option value="es">Spanisch</option><option value="it">Italienisch</option>
+          </select></label>
+      </div>
+      <div id="propose-fields"></div>
+      <label>Quelle (optional: Webseite, Anleitung, eigene Arbeit …) <input id="propose-source" autocomplete="off"></label>
+      <div id="propose-result" class="meta"></div>
+      <div id="propose-log"></div>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button type="button" id="propose-close">Schließen</button>
+        <button id="propose-send" class="primary">Senden …</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="help-dialog" class="form-dialog">
+    <form method="dialog">
+      <div class="help-head"><h3>Anleitung</h3><span class="spacer"></span><button class="primary">Schließen</button></div>
+      <div id="help-body" class="help-body"></div>
+    </form>
+  </dialog>
+
+  <dialog id="about-dialog" class="form-dialog">
+    <form method="dialog">
+      <div class="about-head">
+        <img src="icon.png" alt="" width="72" height="72">
+        <div>
+          <h3>Breadbin</h3>
+          <div class="meta">C64 Game Library · <span translate="no">Version <span id="about-version"></span></span></div>
+        </div>
+      </div>
+      <p>Breadbin erfasst C64-Spiele aus Ordnern, Netzlaufwerken und von Ultimate-Geräten, zeigt, was wo liegt,
+        holt Beschreibungen und Bilder und startet Spiele auf einer Ultimate 64, einem C64 Ultimate oder einem
+        1541 Ultimate II+. Der Name kommt vom Spitznamen des ersten C64-Gehäuses: „Brotkasten“.</p>
+      <h4>Lizenz</h4>
+      <p>Freie Software unter der <a href="#" data-url="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public
+        License 3.0</a> oder neuer. Kostenlos, ohne Werbung, ohne Datensammlung.</p>
+      <h4>Daten und Dank</h4>
+      <ul class="about-list">
+        <li>Beschreibungen und Bilder: <a href="#" data-url="https://www.screenscraper.fr">ScreenScraper.fr</a>
+          (Creative Commons BY-NC-SA 4.0) – mit dem Konto des Nutzers abgerufen.</li>
+        <li>Links zu <a href="#" data-url="https://csdb.dk">CSDb</a>, <a href="#" data-url="https://gb64.com">GameBase64</a>,
+          <a href="#" data-url="https://www.lemon64.com">Lemon64</a> und <a href="#" data-url="https://www.c64-wiki.de">C64-Wiki</a>
+          – es werden keine Daten von dort übernommen.</li>
+        <li>Gebaut mit <a href="#" data-url="https://tauri.app">Tauri</a> und Rust; Datenbank SQLite (rusqlite),
+          dazu ureq, zip, image, keyring und weitere freie Bibliotheken.</li>
+        <li>Ultimate 64, C64 Ultimate und 1541 Ultimate II+ sind Produkte von Gideon's Logic; „Commodore 64“ ist
+          eine Marke ihrer jeweiligen Inhaber. Breadbin ist mit keinem davon verbunden.</li>
+      </ul>
+      <p class="meta">© 2026 <a href="#" data-url="https://8bitcavern.de">8bitcavern.de</a> – Projektseite, Neuigkeiten und weitere C64-Projekte</p>
+      <p class="meta">Kontakt: <a href="#" data-url="mailto:breadbin@8bitcavern.de" class="selectable" translate="no">breadbin@8bitcavern.de</a></p>
+      <div class="dialog-buttons">
+        <button type="button" id="about-data">Datenordner zeigen</button>
+        <button type="button" id="about-backup" title="Datenbank mit Quellen, Geräten, eigenen Angaben, Listen, Notizen und Einstellungen samt allen Bildern als eine ZIP-Datei speichern">Bibliothek sichern …</button>
+        <button type="button" id="about-restore" title="Eine Sicherung zurückspielen – ersetzt die jetzige Bibliothek">Sicherung zurückspielen …</button>
+        <button type="button" id="about-help">Anleitung</button>
+        <span class="spacer"></span>
+        <button class="primary">Schließen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="zoom"><img alt=""></dialog>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

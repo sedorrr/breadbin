@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Breadbin",
+  "version": "0.9.0",
+  "identifier": "de.dersedor.breadbin",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Breadbin – C64 Game Library",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 860,
+        "minHeight": 520
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Utility",
+    "publisher": "8bitcavern.de",
+    "copyright": "© 2026 8bitcavern.de",
+    "homepage": "https://8bitcavern.de",
+    "license": "GPL-3.0-or-later",
+    "licenseFile": "../LICENSE",
+    "shortDescription": "C64-Spiele finden, beschreiben und auf Ultimate-Geräten starten",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

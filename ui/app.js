@@ -8,6 +8,8 @@ const LIMIT = 1000;
 const $ = (sel) => document.querySelector(sel);
 
 let selectedSha1 = null;
+// Eigene Listen: früh anlegen, die Trefferliste kann vor loadLists() gezeichnet werden
+let gameLists = [];
 let scanning = false;
 // Quelle, die gerade gescannt wird, mit dem letzten Zwischenstand (für die Quellenliste).
 let scanLive = null;
@@ -2295,8 +2297,6 @@ async function fetchSaves(dev, sha1s = null) {
 }
 
 // ---------------------------------------------------------------- Eigene Listen und Notizen
-
-let gameLists = [];
 
 async function loadLists() {
   gameLists = await invoke("lists");

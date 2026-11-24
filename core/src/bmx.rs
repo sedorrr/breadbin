@@ -903,15 +903,30 @@ pub fn discover_at(targets: &[SocketAddr], wait: Duration) -> Vec<(IpAddr, u16)>
     found
 }
 
-/// Netzsuche im eigenen Netz: Broadcast an das /24-Netz der eigenen Adresse und an 255.255.255.255.
+/// Netzsuche: Broadcast an die Netze aller aktiven IPv4-Schnittstellen und an 255.255.255.255.
 /// Gibt die Adressen der BMX zurück (mit `:port`, falls nicht 80).
-// Antwortet, sobald die Remote API an ist (vom BMX-Entwickler bestätigt). Befragt wird nur die Schnittstelle der
-// Standardroute (ohne zusätzliche Abhängigkeit für die Liste aller Schnittstellen).
+// Antwortet, sobald die Remote API an ist (vom BMX-Entwickler bestätigt).
+// Das /24-Netz der übergebenen Adresse bleibt als Rückfall erhalten.
 pub fn discover(local: Option<std::net::Ipv4Addr>, wait: Duration) -> Vec<String> {
     let mut targets = vec![SocketAddr::from(([255, 255, 255, 255], DISCOVERY_PORT))];
     if let Some(ip) = local {
         let o = ip.octets();
         targets.push(SocketAddr::from(([o[0], o[1], o[2], 255], DISCOVERY_PORT)));
+    }
+    if let Ok(interfaces) = if_addrs::get_if_addrs() {
+        for iface in interfaces {
+            if iface.is_loopback() || !iface.is_oper_up() {
+                continue;
+            }
+            if let if_addrs::IfAddr::V4(addr) = iface.addr
+                && let Some(broadcast) = addr.broadcast
+            {
+                let target = SocketAddr::from((broadcast, DISCOVERY_PORT));
+                if !targets.contains(&target) {
+                    targets.push(target);
+                }
+            }
+        }
     }
     discover_at(&targets, wait)
         .into_iter()

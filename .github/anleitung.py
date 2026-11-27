@@ -12,8 +12,44 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "website" / "anleitung" / "index.html"
 
 
+# Bildschirmfotos (website/bilder/anleitung/<name>-<sprache>.jpg, erzeugt mit .github/anleitung_bilder.py) – nur auf
+# der Webseite, nach dem ersten Absatz des Abschnitts. Größe: „gross“ volle Breite, „klein“ schmal (Seitenleiste).
+BILDER = {
+    "h-start": ("hauptfenster", "gross", "Links Quellen und Geräte, in der Mitte die Liste, rechts die Details.",
+                "Sources and devices on the left, the list in the middle, details on the right."),
+    "h-sources": ("quellen", "klein", "Quellen: Ordner, Netzlaufwerke und der Stick eines Geräts.",
+                  "Sources: folders, network drives and a device's stick."),
+    "h-list": ("liste", "gross", "Suche, Filter und die Auswahl der Art über der Liste.",
+               "Search, filters and the kind selector above the list."),
+    "h-details": ("details", "mittel", "Details mit Bildern und Beschreibung.",
+                  "Details with pictures and description."),
+    "h-devices": ("geraete", "klein", "Geräteliste: ■ beendet das Spiel, ⤓ holt Spielstände, „Neu suchen“ bei einem nicht erreichbaren Gerät.",
+                  "Device list: ■ stops the game, ⤓ fetches saved games, “Search again” for an unreachable device."),
+    "h-launch": ("starten", "klein", "Startleiste: Gerät oder Emulator wählen, starten oder einlegen.",
+                 "Launch bar: pick a device or emulator, launch or insert."),
+    "h-own": ("eigene", "mittel", "Eigene Angaben: Titel, Art, Beschreibung auf Deutsch und Englisch, eigene Bilder.",
+              "Own details: title, kind, description in German and English, own pictures."),
+}
+
+
+def bild(lang: str, hid: str) -> str:
+    name, groesse, de, en = BILDER[hid]
+    datei = ROOT / "website" / "bilder" / "anleitung" / f"{name}-{lang}.jpg"
+    if not datei.is_file():
+        return ""
+    text = de if lang == "de" else en
+    return (f'<figure class="shot {groesse}"><a href="../bilder/anleitung/{name}-{lang}.jpg">'
+            f'<img src="../bilder/anleitung/{name}-{lang}.jpg" alt="{text}" loading="lazy"></a>'
+            f"<figcaption>{text}</figcaption></figure>")
+
+
 def body(lang: str) -> str:
     html = (ROOT / "ui" / f"help.{lang}.html").read_text(encoding="utf-8")
+    # Bilder nach dem ersten Absatz bzw. der ersten Liste hinter der Überschrift einfügen
+    for hid in BILDER:
+        m = re.search(rf'<h3 id="{hid}"[^>]*>.*?</h3>.*?(</p>|</ul>|</ol>)', html, re.S)
+        if m:
+            html = html[: m.end()] + "\n" + bild(lang, hid) + html[m.end():]
     # Anker je Sprache eindeutig machen (beide Fassungen stehen auf einer Seite)
     html = re.sub(r'id="(h-[\w-]+)"', rf'id="{lang}-\1"', html)
     html = re.sub(r'href="#(h-[\w-]+)"', rf'href="#{lang}-\1"', html)
@@ -66,6 +102,11 @@ PAGE = """<!doctype html>
   .help-toc a:hover { border-color: var(--accent); }
   .help table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
   .help td, .help th { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+  .help figure.shot { margin: 16px 0 22px; }
+  .help figure.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 6px 22px rgba(0,0,0,.12); background: var(--panel); }
+  .help figure.shot.mittel { max-width: 560px; } .help figure.shot.klein { max-width: 340px; }
+  .help figure.shot figcaption { color: var(--muted); font-size: 14px; margin-top: 6px; max-width: 72ch; }
   footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; padding-block: 18px 32px; }
   footer a { color: var(--accent); }
   [hidden] { display: none !important; }

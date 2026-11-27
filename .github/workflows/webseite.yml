@@ -44,6 +44,8 @@ jobs:
           gh release view --json tagName -q .tagName > ../website/download/version.txt
       - name: Anleitung aus dem Handbuch der App bauen
         run: python3 .github/anleitung.py
+      - name: Versionsverlauf der App für „Neu in Version …“ übernehmen
+        run: cp ui/versionen.js website/versionen.js
       - if: steps.da.outputs.ok == '1'
         name: Hochladen (FTPS)
         run: |

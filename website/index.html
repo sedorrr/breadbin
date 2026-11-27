@@ -142,6 +142,11 @@
   .o h3 { margin: 0; } .o p { margin: 0; color: var(--muted); font-size: 15px; }
   .o .row { display: flex; gap: 8px; flex-wrap: wrap; }
   .mine-tag { font-size: 12px; color: var(--accent); font-weight: 700; display: none; } .o.mine .mine-tag { display: inline; }
+  .neu { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 18px 0 8px; }
+  .neu h3 { margin: 0 0 6px; } .neu h4 { margin: 12px 0 4px; font-size: 1em; }
+  .neu ul { margin: 0; padding-left: 1.2em; color: var(--muted); } .neu li { margin: 2px 0; }
+  .neu .datum { color: var(--muted); font-weight: 400; font-size: .9em; }
+  .neu details { margin-top: 12px; padding: 10px 14px; }
   details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-top: 10px; }
   summary { cursor: pointer; font-weight: 650; } details p { color: var(--muted); margin: 10px 0 0; max-width: 75ch; }
   footer { padding-block: 32px 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; }
@@ -211,12 +216,12 @@
 </div></section>
 
 <section id="funktionen"><div class="wrap">
-  <h2 class="reveal" data-t="k-h">Jede Taste eine Funktion</h2>
+  <h2 class="reveal" data-t="k-h">Was Breadbin kann</h2>
   <p class="sub reveal" data-t="k-sub">Was Breadbin für Sammlerinnen und Sammler mit vielen Tausend Abbildern tut.</p>
   <div class="keys">
     <div class="k reveal"><div class="cap">F1</div><div><h3 data-t="k1h">Katalog</h3><p data-t="k1p">PRG, CRT, D64, D71, D81, G64, T64, TAP, P00 – Verzeichnisse und Modultypen werden gelesen und sind durchsuchbar.</p></div></div>
     <div class="k reveal"><div class="cap">F3</div><div><h3 data-t="k2h">Fassungen bündeln</h3><p data-t="k2p">Original, Crack, Moduleumsetzung: eine Zeile pro Spiel, alle Fassungen griffbereit.</p></div></div>
-    <div class="k reveal"><div class="cap">F5</div><div><h3 data-t="k3h">Echte Hardware</h3><p data-t="k3p">Starten, Diskette einlegen, Gerät per WLAN wecken und ausschalten – über die Netzwerkschnittstelle des Ultimate.</p></div></div>
+    <div class="k reveal"><div class="cap">F5</div><div><h3 data-t="k3h">Echte Hardware</h3><p data-t="k3p">Starten, Diskette einlegen, Spiel beenden – auf Ultimate, BMC64, BMX und TeensyROM übers Netz; den Ultimate auch wecken und ausschalten.</p></div></div>
     <div class="k reveal"><div class="cap">F7</div><div><h3 data-t="k4h">Bildschirmfoto</h3><p data-t="k4p">Titelbild oder Spielszene direkt vom C64 – auf Wunsch automatisch, sobald das Spiel läuft.</p></div></div>
     <div class="k reveal"><div class="cap">RUN</div><div><h3 data-t="k5h">Zufallsspiel</h3><p data-t="k5p">Taste Z, und Breadbin schlägt dir ein Spiel aus deiner Auswahl vor. Perfekt für lange Abende.</p></div></div>
     <div class="k reveal"><div class="cap">C=</div><div><h3 data-t="k6h">Listen und Spielstände</h3><p data-t="k6p">Eigene Listen, Sterne, Notizen. Spielstände von geänderten Disketten zurückholen, Bibliothek sichern.</p></div></div>
@@ -235,7 +240,8 @@
 </div></section>
 
 <section id="geraete"><div class="wrap">
-  <h2 class="reveal" data-t="d-h">Für diese Geräte gemacht</h2>
+  <h2 class="reveal" data-t="d-h">Diese Geräte steuert Breadbin direkt</h2>
+  <p class="sub reveal" data-t="d-sub">Starten, Diskette wechseln, Bildschirmfoto – per Klick aus der Sammlung. Ohne Gerät funktioniert alles andere genauso, gestartet wird dann im Emulator.</p>
   <div class="dev">
     <div class="d reveal"><h3>Ultimate 64 Elite II</h3><p data-t="d1">Starten, Bildschirmfoto, Stick lesen, Wecken per WLAN.</p><span class="badge" data-t="ok">geprüft</span></div>
     <div class="d reveal"><h3>Ultimate 64 Elite</h3><p data-t="d2">Alle Formate außer Band, Bildschirmfoto über Ethernet.</p><span class="badge" data-t="ok">geprüft</span></div>
@@ -269,6 +275,7 @@
     <div class="o reveal" data-os="win"><h3>Windows <span class="mine-tag" data-t="mine">· dein System</span></h3><p data-t="o2">Windows 10 und 11, 64 Bit. Tragbar als ZIP für den USB-Stick.</p><div class="row"><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64-setup.exe">Setup.exe</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64_en-US.msi">.msi</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_x64-portable.zip">Portable .zip</a></div></div>
     <div class="o reveal" data-os="lin"><h3>Linux <span class="mine-tag" data-t="mine">· dein System</span></h3><p data-t="o3">AppImage für alle Distributionen, dazu deb und rpm.</p><div class="row"><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.AppImage">AppImage</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.deb">.deb</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin.x86_64.rpm">.rpm</a></div></div>
   </div>
+  <div class="neu reveal" id="neu" hidden></div>
   <details class="reveal"><summary data-t="q1">Warum warnt mein System beim ersten Start?</summary><p data-t="a1">Die Pakete sind nicht mit einem bezahlten Zertifikat signiert. macOS: Meldung mit „Fertig“ schließen, dann Systemeinstellungen → Datenschutz &amp; Sicherheit → „Dennoch öffnen“ und den Zugriff aufs lokale Netzwerk erlauben. Windows: „Weitere Informationen“ → „Trotzdem ausführen“.</p></details>
   <details class="reveal"><summary data-t="q5">Läuft Breadbin unter Windows 7 oder 8?</summary><p data-t="a5">Nein. Breadbin braucht Windows 10 oder 11 (64 Bit), weil die Oberfläche auf Microsofts WebView2 läuft, das es für Windows 7 und 8 seit 2023 nicht mehr gibt. Fehlermeldungen wie „ProcessPrng“ oder „PackageIdFromFullName“ beim Start bedeuten genau das.</p></details>
   <details class="reveal"><summary data-t="q2">Brauche ich ein Ultimate-Gerät?</summary><p data-t="a2">Nein. Katalog, Beschreibungen, Listen und Gemeinschaftsdaten funktionieren ohne Gerät. Zum Starten genügt auch ein Emulator wie VICE; auf echter Hardware brauchst du einen Ultimate, BMC64, BMX oder TeensyROM im Netz.</p></details>
@@ -282,6 +289,7 @@
   <div><a href="schlicht/" data-t="ft2">Schlichte Fassung dieser Seite</a></div>
 </footer></div>
 
+<script src="versionen.js"></script>
 <script>
 "use strict";
 const EN = {
@@ -293,15 +301,15 @@ const EN = {
   s1h: "Add folders", s1p: "Hard disk, network drive or the Ultimate's USB stick. ZIP archives are read too; identical files count once.",
   s2h: "Add details", s2p: "Description, genre, year and pictures from the community data – matched by checksum, not by file name.",
   s3h: "Launch", s3p: "One click and the game runs on real hardware. Swap disks mid-game without a restart.",
-  "k-h": "Every key a feature", "k-sub": "What Breadbin does for collectors with many thousands of images.",
+  "k-h": "What Breadbin can do", "k-sub": "What Breadbin does for collectors with many thousands of images.",
   k1h: "Catalog", k1p: "PRG, CRT, D64, D71, D81, G64, T64, TAP, P00 – directories and cartridge types are read and searchable.",
   k2h: "Versions bundled", k2p: "Original, crack, cartridge conversion: one row per game, every version at hand.",
-  k3h: "Real hardware", k3p: "Launch, insert a disk, wake the device over Wi-Fi and switch it off – via the Ultimate's network interface.",
+  k3h: "Real hardware", k3p: "Launch, insert a disk, stop a game – on Ultimate, BMC64, BMX and TeensyROM over the network; wake and switch off the Ultimate too.",
   k4h: "Screenshot", k4p: "Title screen or in-game picture straight from the C64 – automatically once the game runs, if you like.",
   k5h: "Random game", k5p: "Press Z and Breadbin suggests a game from your selection. Perfect for long evenings.",
   k6h: "Lists and saved games", k6p: "Your own lists, stars, notes. Fetch saved games from changed disks, back up the library.",
   g1: "Main window: list, details, title and in-game picture", g2: "Light or dark – like your system", g3: "English and German",
-  "d-h": "Made for these devices", d1: "Launch, screenshot, read the stick, wake over Wi-Fi.", d2: "All formats except tape, screenshot over Ethernet.",
+  "d-h": "Breadbin controls these devices directly", "d-sub": "Launch, swap disks, take screenshots – with one click from your collection. Without a device everything else works just the same, and games start in an emulator.", d1: "Launch, screenshot, read the stick, wake over Wi-Fi.", d2: "All formats except tape, screenshot over Ethernet.",
   d3: "Launch, disk swap, screenshot.", d4: "Same route via REST and FTP; we are looking for testers.", ok: "tested", open: "untested",
   d5: "Upload and start all formats including tape, read folders on the Pi.", d6: "Start all formats including tape, disk swap, screenshot.",
   d7: "Start over the network, built from the protocol documentation; we are looking for testers.", d8: "Play on your computer without a device; disk swap and screenshot with VICE.",
@@ -327,6 +335,25 @@ function apply() {
     el.innerHTML = lang === "en" && EN[el.dataset.t] ? EN[el.dataset.t] : orig.get(el);
   });
   document.getElementById("lang").textContent = lang === "en" ? "Deutsch" : "English";
+  renderNeu();
+}
+
+// Neuerungen aus dem Versionsverlauf der App (versionen.js, beim Hochladen aus ui/ kopiert): die Fassungen der
+// letzten drei Tage offen (meist die neueste und ein Zwischenrelease), ältere eingeklappt.
+function renderNeu() {
+  const box = document.getElementById("neu");
+  const list = typeof VERSIONS !== "undefined" ? VERSIONS : [];
+  if (!box || !list.length) return;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const day = (d) => { const [y, m, t] = d.split("-"); return lang === "en" ? d : `${t}.${m}.${y}`; };
+  const newest = Date.parse(list[0].date);
+  const block = (v, tag) => `<${tag}>${tag === "h3" ? (lang === "en" ? "New in version " : "Neu in Version ") : (lang === "en" ? "Version " : "Version ")}${esc(v.v)} <span class="datum">· ${day(v.date)}</span></${tag}>
+    <ul>${(lang === "en" ? v.en : v.de).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const recent = list.filter((v, i) => i === 0 || newest - Date.parse(v.date) <= 3 * 864e5);
+  const older = list.slice(recent.length);
+  box.innerHTML = recent.map((v, i) => block(v, i === 0 ? "h3" : "h4")).join("")
+    + (older.length ? `<details><summary>${lang === "en" ? "Earlier versions" : "Frühere Fassungen"}</summary>${older.map((v) => block(v, "h4")).join("")}</details>` : "");
+  box.hidden = false;
 }
 document.getElementById("lang").addEventListener("click", () => {
   lang = lang === "en" ? "de" : "en";

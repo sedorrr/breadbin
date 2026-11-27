@@ -2,6 +2,15 @@
 
 English first, German below each version. / Englisch zuerst, Deutsch jeweils darunter.
 
+## Unreleased / Unveröffentlicht
+
+- Before submitting, the dialog lists entries without description or picture and entries entered as games whose file
+  name sounds like a demo, intro or music. These are hints only: click a title to edit it, “Send without these” keeps
+  them for later, “Send anyway” sends everything. / Vor dem Einsenden listet der Dialog Einträge ohne Beschreibung oder
+  Bild und Einträge, die als Spiel eingetragen sind, deren Dateiname aber nach Demo, Intro oder Musik klingt. Das sind
+  nur Hinweise: Ein Klick auf einen Titel öffnet ihn zum Bearbeiten, „Ohne diese senden“ lässt sie für später liegen,
+  „Trotzdem senden“ schickt alles.
+
 ## 0.9.5 (2026-11-27)
 
 - Besides games, entries can now be demos, intros, music, diskmags, tools or graphics (field “Kind” in the details

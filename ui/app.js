@@ -436,6 +436,7 @@ $("#btn-community-submit").addEventListener("click", async () => {
     submitCounts = { all: n, pending: await invoke("submit_pending_count") };
     $("#submit-all").checked = false;
     showSubmitInfo();
+    await showSubmitGaps();
     $("#submit-result").textContent = "";
     $("#submit-send").hidden = false;
     $("#submit-send").disabled = !submitCounts.pending;
@@ -456,31 +457,81 @@ function showSubmitInfo() {
     : t("Nichts Neues: Alle {all} Spiele mit selbst geschriebenen Angaben sind schon in dieser Fassung eingesandt.", { all: nf(submitCounts.all) });
   $("#submit-send").disabled = !n;
 }
-$("#submit-all").addEventListener("change", showSubmitInfo);
-$("#submit-close").addEventListener("click", () => $("#submit-dialog").close());
-$("#submit-form").addEventListener("submit", async (ev) => {
+// Prüfung vor dem Einsenden: nur Hinweise, Einsenden bleibt immer möglich.
+let submitGapSkip = [];
+async function showSubmitGaps() {
+  const box = $("#submit-gaps");
+  const r = await invoke("submission_gaps", { all: $("#submit-all").checked });
+  const gaps = r.no_text + r.no_image + r.kind_hints;
+  submitGapSkip = r.entries.filter((e) => e.no_text || e.no_image).map((e) => e.sha1);
+  box.hidden = !r.total || !gaps;
+  $("#submit-skip").hidden = box.hidden || !submitGapSkip.length;
+  $("#submit-skip").disabled = submitGapSkip.length >= r.total;
+  $("#submit-send").textContent = box.hidden ? t("Einsenden") : t("Trotzdem senden");
+  if (box.hidden) { box.innerHTML = ""; return; }
+  const kinds = Object.entries(r.kinds).sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => t("{n} als {art}", { n: nf(n), art: kindName(k) })).join(", ");
+  const sums = [
+    r.no_text && t("{n} ohne Beschreibung", { n: nf(r.no_text) }),
+    r.no_image && t("{n} ohne Bild", { n: nf(r.no_image) }),
+    r.kind_hints && t("{n} vielleicht mit falscher Art", { n: nf(r.kind_hints) }),
+  ].filter(Boolean).join(" · ");
+  const item = (e) => {
+    const why = [
+      e.no_text && t("ohne Beschreibung"),
+      e.no_image && t("ohne Bild"),
+      e.kind_hint && t("als Spiel eingetragen – {art}?", { art: kindName(e.kind_hint) }),
+    ].filter(Boolean).join(", ");
+    return `<li><a href="#" data-sha1="${esc(e.sha1)}">${esc(e.title)}</a> <span class="meta">${esc(e.file)} – ${esc(why)}</span></li>`;
+  };
+  const max = 200;
+  box.innerHTML = `<p><strong>${t("Bitte prüfen:")}</strong> ${esc(sums)}</p>
+    <p class="meta">${t("Arten: {liste}.", { liste: esc(kinds) })} ${t("Ein Klick auf einen Titel öffnet ihn zum Bearbeiten. Einsenden geht trotzdem.")}</p>
+    <ul class="gap-list">${r.entries.slice(0, max).map(item).join("")}</ul>
+    ${r.entries.length > max ? `<p class="meta">${t("… und {n} weitere.", { n: nf(r.entries.length - max) })}</p>` : ""}`;
+}
+$("#submit-gaps").addEventListener("click", (ev) => {
+  const a = ev.target.closest("a[data-sha1]");
+  if (!a) return;
   ev.preventDefault();
+  $("#submit-dialog").close();
+  ensureRowShown(a.dataset.sha1);
+  showDetails(a.dataset.sha1).catch(showError);
+});
+$("#submit-all").addEventListener("change", () => { showSubmitInfo(); showSubmitGaps().catch(showError); });
+$("#submit-close").addEventListener("click", () => $("#submit-dialog").close());
+$("#submit-skip").addEventListener("click", () => sendSubmission(submitGapSkip));
+$("#submit-form").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  sendSubmission([]);
+});
+async function sendSubmission(skip) {
   const out = $("#submit-result");
   $("#submit-send").disabled = true;
+  $("#submit-skip").disabled = true;
   out.textContent = t("Wird eingesandt …");
   try {
-    const r = await invoke("community_submit", { name: $("#submit-name").value, hinweis: $("#submit-hinweis").value, all: $("#submit-all").checked });
+    const r = await invoke("community_submit", { name: $("#submit-name").value, hinweis: $("#submit-hinweis").value, all: $("#submit-all").checked, skip });
     if (r.ok) {
       out.textContent = r.teile > 1
         ? t("Eingegangen in {k} Beiträgen (Nr. {ids}, zusammen {n} Spiele). Danke! Nach der Prüfung erscheinen sie in den Gemeinschaftsdaten.", { k: r.teile, ids: r.ids.join(", "), n: nf(r.spiele) })
         : t("Eingegangen (Nr. {id}, {n} Spiele). Danke! Nach der Prüfung erscheint er in den Gemeinschaftsdaten.", { id: r.id, n: nf(r.spiele) });
       // Fertig: nur noch bestätigen.
       $("#submit-send").hidden = true;
+      $("#submit-skip").hidden = true;
+      $("#submit-gaps").hidden = true;
       $("#submit-close").textContent = t("OK");
     } else {
       out.textContent = [r.fehler || t("Abgelehnt."), ...r.probleme.slice(0, 10)].join("\n");
       $("#submit-send").disabled = false;
+      $("#submit-skip").disabled = false;
     }
   } catch (e) {
     out.textContent = String(e);
     $("#submit-send").disabled = false;
+    $("#submit-skip").disabled = false;
   }
-});
+}
 
 // Übersichtsseite (Statistik und Suche) liegt neben der Austauschdatei: Adresse ohne Dateinamen.
 function communityWebUrl() {

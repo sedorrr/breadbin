@@ -190,6 +190,19 @@ fn submit_pending_count(state: State<AppState>) -> CmdResult<usize> {
         .map_err(err)
 }
 
+/// Lücken der einzusendenden Einträge (fehlende Beschreibung, fehlendes Bild, vermutlich falsche Art).
+#[tauri::command]
+fn submission_gaps(state: State<AppState>, all: Option<bool>) -> CmdResult<share::GapReport> {
+    let conn = state.conn.lock().unwrap();
+    let games = if all.unwrap_or(false) {
+        share::shareable(&conn)
+    } else {
+        share::pending_submission(&conn)
+    }
+    .map_err(err)?;
+    Ok(share::submission_gaps(&games))
+}
+
 /// Zahl der teilbaren Spiele (selbst geschrieben).
 #[tauri::command]
 fn share_count(state: State<AppState>) -> CmdResult<usize> {
@@ -370,6 +383,7 @@ async fn community_submit(
     name: String,
     hinweis: String,
     all: Option<bool>,
+    skip: Option<Vec<String>>,
 ) -> CmdResult<share::SubmitResult> {
     let url = scraper::submit_url(&state);
     if url.is_empty() {
@@ -389,6 +403,13 @@ async fn community_submit(
             share::pending_submission(&conn)
         }
         .map_err(err)?;
+        // „Ohne diese senden“: Einträge mit Lücken bleiben offen und gehen beim nächsten Mal mit.
+        let skip: std::collections::HashSet<String> =
+            skip.unwrap_or_default().into_iter().collect();
+        let games: Vec<_> = games
+            .into_iter()
+            .filter(|g| !skip.contains(&g.0.sha1))
+            .collect();
         if games.is_empty() {
             return Err(share::nothing_new().to_string());
         }
@@ -773,6 +794,7 @@ fn main() {
             export_csv,
             share_count,
             submit_pending_count,
+            submission_gaps,
             export_share,
             import_share,
             community_update,

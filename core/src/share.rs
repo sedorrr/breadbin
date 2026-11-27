@@ -597,6 +597,109 @@ pub fn nothing_new() -> anyhow::Error {
     ))
 }
 
+/// Ein Eintrag mit Lücken vor dem Einsenden (nur Hinweis, Einsenden bleibt möglich).
+#[derive(Debug, Serialize, Default, Clone)]
+pub struct GapEntry {
+    pub sha1: String,
+    pub title: String,
+    pub file: String,
+    pub no_text: bool,
+    pub no_image: bool,
+    /// Vermutete Art laut Dateiname/Titel, wenn der Eintrag als Spiel gilt („demo“, „music“ …), sonst leer.
+    pub kind_hint: String,
+}
+
+/// Übersicht vor dem Einsenden: was fehlt, welche Arten gehen hinaus.
+#[derive(Debug, Serialize, Default)]
+pub struct GapReport {
+    pub total: usize,
+    pub no_text: usize,
+    pub no_image: usize,
+    pub kind_hints: usize,
+    /// Art → Anzahl (`game` für Einträge ohne Art).
+    pub kinds: BTreeMap<String, usize>,
+    pub entries: Vec<GapEntry>,
+}
+
+/// Vermutet aus Dateinamen und Titel eine andere Art als Spiel (Wortteile wie „demo“, „intro“, „music“).
+pub fn guess_kind(names: &[&str]) -> Option<&'static str> {
+    for name in names {
+        let lower = name.to_lowercase();
+        let stem = match lower.rsplit_once('.') {
+            Some((s, ext)) if ext.len() <= 3 => s.to_string(),
+            _ => lower.clone(),
+        };
+        // Zusätze in Klammern (Herausgeber, „Music v1“, „Music by …“) zählen nicht.
+        let mut plain = String::with_capacity(stem.len());
+        let mut depth = 0u32;
+        for c in stem.chars() {
+            match c {
+                '(' | '[' | '{' => depth += 1,
+                ')' | ']' | '}' => depth = depth.saturating_sub(1),
+                _ if depth == 0 => plain.push(c),
+                _ => {}
+            }
+        }
+        for word in plain.split(|c: char| !c.is_alphanumeric()) {
+            let kind = match word {
+                "demo" | "demos" | "megademo" | "onefiler" => "demo",
+                "intro" | "intros" | "cracktro" => "intro",
+                "music" | "musik" | "tune" | "tunes" | "sids" | "musicdisk" | "musicdisc" => {
+                    "music"
+                }
+                "diskmag" | "magazine" | "mag64" => "diskmag",
+                "tool" | "tools" | "utility" | "utilities" | "editor" => "tool",
+                "gfx" | "graphics" | "pic" | "pics" | "picture" | "koala" | "slideshow" => {
+                    "graphics"
+                }
+                _ => continue,
+            };
+            return Some(kind);
+        }
+    }
+    None
+}
+
+/// Prüft die einzusendenden Einträge auf fehlende Beschreibung, fehlendes Bild und vermutlich falsche Art.
+pub fn submission_gaps(games: &[Shareable]) -> GapReport {
+    let mut r = GapReport {
+        total: games.len(),
+        ..Default::default()
+    };
+    for (g, images) in games {
+        let kind = if g.kind.is_empty() {
+            "game"
+        } else {
+            g.kind.as_str()
+        };
+        *r.kinds.entry(kind.to_string()).or_default() += 1;
+        let no_text = g.synopsis.trim().is_empty() && g.texts.values().all(|t| t.trim().is_empty());
+        let no_image = images.is_empty();
+        let kind_hint = if kind == "game" {
+            let mut names: Vec<&str> = g.files.iter().map(String::as_str).collect();
+            names.push(&g.title);
+            guess_kind(&names).unwrap_or_default().to_string()
+        } else {
+            String::new()
+        };
+        r.no_text += no_text as usize;
+        r.no_image += no_image as usize;
+        r.kind_hints += !kind_hint.is_empty() as usize;
+        if no_text || no_image || !kind_hint.is_empty() {
+            r.entries.push(GapEntry {
+                sha1: g.sha1.clone(),
+                title: g.title.clone(),
+                file: g.files.first().cloned().unwrap_or_default(),
+                no_text,
+                no_image,
+                kind_hint,
+            });
+        }
+    }
+    r.entries.sort_by_key(|a| a.title.to_lowercase());
+    r
+}
+
 /// Schickt eine schon geschriebene Austauschdatei an den Server (ohne Datenbank, also ohne Sperre).
 pub fn submit_file(
     file: &Path,
@@ -1210,6 +1313,52 @@ mod tests {
         assert_eq!(meta2.provider, PROVIDER_SHARED);
         assert_eq!(meta2.synopsis.as_deref(), Some("Deutsch"));
         assert_eq!(meta2.synopsis_en.as_deref(), Some("English"));
+    }
+
+    #[test]
+    fn luecken_vor_dem_einsenden() {
+        let game = |sha: &str, title: &str, file: &str, text: &str, kind: &str| SharedGame {
+            sha1: sha.into(),
+            title: title.into(),
+            files: vec![file.into()],
+            synopsis: text.into(),
+            kind: kind.into(),
+            ..Default::default()
+        };
+        let img = vec![("sstitle".to_string(), "a.png".to_string())];
+        let games = vec![
+            (
+                game("1", "Komplett", "komplett.d64", "Text", ""),
+                img.clone(),
+            ),
+            (game("2", "Ohne Text", "ohne.prg", "", ""), img.clone()),
+            (game("3", "Ohne Bild", "bild.prg", "Text", ""), vec![]),
+            (
+                game("4", "Edge", "edge_of_disgrace-demo.d64", "Text", ""),
+                img.clone(),
+            ),
+            (game("5", "Edge", "edge.d64", "Text", "demo"), img.clone()),
+        ];
+        let r = submission_gaps(&games);
+        assert_eq!((r.total, r.no_text, r.no_image, r.kind_hints), (5, 1, 1, 1));
+        assert_eq!(r.kinds.get("game"), Some(&4));
+        assert_eq!(r.kinds.get("demo"), Some(&1));
+        assert_eq!(r.entries.len(), 3);
+        assert!(
+            r.entries
+                .iter()
+                .any(|e| e.sha1 == "4" && e.kind_hint == "demo")
+        );
+        assert_eq!(guess_kind(&["Hawkeye Music Collection.prg"]), Some("music"));
+        assert_eq!(guess_kind(&["Magic Carpet.d64", "Demolition"]), None);
+        assert_eq!(
+            guess_kind(&["1942 (Music v1).crt", "Skate Crazy (Gremlin Graphics).d64"]),
+            None
+        );
+        assert_eq!(
+            guess_kind(&["C64anabalt (Side 1 - Music by Encore) .tap", "Sid"]),
+            None
+        );
     }
 
     #[test]

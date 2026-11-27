@@ -460,6 +460,10 @@ dialog#about-dialog { width: min(560px, 94vw); font-size: 13.5px; line-height: 1
 
 /* Einsenden: Haken linksbündig */
 #submit-dialog label.check { justify-content: flex-start; white-space: normal; }
+#submit-gaps { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin: 6px 0; }
+#submit-gaps p { margin: 4px 0; }
+#submit-gaps .gap-list { max-height: 220px; overflow-y: auto; margin: 4px 0; padding-left: 18px; }
+#submit-gaps .gap-list li { margin: 2px 0; }
 
 .emu-game-args { display: flex; align-items: center; gap: 6px; flex-basis: 100%; font-size: 12px; color: var(--muted, inherit); }
 .emu-game-args input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }

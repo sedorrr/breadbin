@@ -224,6 +224,11 @@ pub struct OwnMeta {
     pub synopsis: String,
     /// Beschreibung auf Englisch (freiwillig).
     pub synopsis_en: String,
+    /// Art (`game`, `demo`, `intro` …; leer = Spiel) und bei Demos usw. Gruppe, Party, Platzierung.
+    pub kind: String,
+    pub group: String,
+    pub party: String,
+    pub place: String,
 }
 
 /// Speichert eigene Angaben. Eine vorhandene ScreenScraper-Spielnummer bleibt erhalten, damit
@@ -260,8 +265,9 @@ pub fn save_own(conn: &Connection, sha1s: &[String], m: &OwnMeta, fresh: bool) -
         }
         conn.execute(
             "INSERT OR REPLACE INTO metadata(sha1, provider, status, game_id, title, synopsis, year, publisher,
-                                             developer, genres, players, rating, fetched_at, synopsis_en)
-             VALUES(?, ?, 'ok', ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)",
+                                             developer, genres, players, rating, fetched_at, synopsis_en,
+                                             kind, grp, party, place)
+             VALUES(?, ?, 'ok', ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)",
             params![
                 sha1,
                 provider,
@@ -274,7 +280,11 @@ pub fn save_own(conn: &Connection, sha1s: &[String], m: &OwnMeta, fresh: bool) -
                 opt(&m.genres),
                 opt(&m.players),
                 now(),
-                opt(&m.synopsis_en)
+                opt(&m.synopsis_en),
+                crate::db::normalize_kind(&m.kind),
+                opt(&m.group),
+                opt(&m.party),
+                m.place.trim().parse::<i64>().ok().filter(|&p| (1..=999).contains(&p))
             ],
         )?;
     }
@@ -508,6 +518,9 @@ pub fn search_library(
     Ok(scored.into_iter().take(limit).map(|(.., h)| h).collect())
 }
 
+/// Art, Gruppe, Party, Platzierung.
+type DemoFields = (Option<String>, Option<String>, Option<String>, Option<i64>);
+
 /// Überträgt Angaben und Bilder der Fassung `from` auf `to` – so landen verschiedene Dateien
 /// desselben Spiels (auch ohne ScreenScraper) in einer Zeile. Eine „Nicht zusammenfassen“-Markierung
 /// der Ziele fällt weg. Von ScreenScraper stammende Angaben gelten danach als von Hand zugeordnet.
@@ -524,13 +537,16 @@ pub fn copy_meta(conn: &Connection, from: &str, to: &[String]) -> Result<()> {
         Option<String>,
         Option<f64>,
         Option<String>,
+        DemoFields,
     );
     let row: Option<Row> = conn
         .query_row(
-            "SELECT provider, game_id, title, synopsis, year, publisher, developer, genres, players, rating, synopsis_en
+            "SELECT provider, game_id, title, synopsis, year, publisher, developer, genres, players, rating, synopsis_en,
+                    kind, grp, party, place
              FROM metadata WHERE sha1 = ? AND status = 'ok'",
             [from],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?, r.get(6)?, r.get(7)?, r.get(8)?, r.get(9)?, r.get(10)?)),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?, r.get(6)?, r.get(7)?, r.get(8)?, r.get(9)?, r.get(10)?,
+                    (r.get(11)?, r.get(12)?, r.get(13)?, r.get(14)?))),
         )
         .optional()?;
     let Some((
@@ -545,6 +561,7 @@ pub fn copy_meta(conn: &Connection, from: &str, to: &[String]) -> Result<()> {
         players,
         rating,
         synopsis_en,
+        (kind, group, party, place),
     )) = row
     else {
         anyhow::bail!(tr!(
@@ -565,9 +582,11 @@ pub fn copy_meta(conn: &Connection, from: &str, to: &[String]) -> Result<()> {
     for sha1 in to.iter().filter(|s| s.as_str() != from) {
         tx.execute(
             "INSERT OR REPLACE INTO metadata(sha1, provider, status, game_id, title, synopsis, year, publisher,
-                                             developer, genres, players, rating, fetched_at, synopsis_en)
-             VALUES(?, ?, 'ok', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params![sha1, provider, game_id, title, synopsis, year, publisher, developer, genres, players, rating, now(), synopsis_en],
+                                             developer, genres, players, rating, fetched_at, synopsis_en,
+                                             kind, grp, party, place)
+             VALUES(?, ?, 'ok', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![sha1, provider, game_id, title, synopsis, year, publisher, developer, genres, players, rating, now(), synopsis_en,
+                    kind, group, party, place],
         )?;
         store_media_rows(&tx, sha1, &media)?;
         tx.execute("DELETE FROM ungrouped WHERE sha1 = ?", [sha1])?;

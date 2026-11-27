@@ -2,6 +2,71 @@
 
 English first, German below each version. / Englisch zuerst, Deutsch jeweils darunter.
 
+## 0.9.5 (2026-11-27)
+
+- Besides games, entries can now be demos, intros, music, diskmags, tools or graphics (field “Kind” in the details
+  dialog, with group, party and place instead of genre and players). The list shows games by default; a new selector
+  switches to all kinds or a single kind. Shared in the exchange format as `kind`, `group`, `party`, `place` – older
+  versions show such entries as games. / Neben Spielen können Einträge jetzt Demos, Intros, Musik, Diskmags, Werkzeuge
+  oder Grafiken sein (Feld „Art“ im Dialog „Angaben“, mit Gruppe, Party und Platz statt Genre und Spielerzahl). Die
+  Liste zeigt standardmäßig Spiele; eine neue Auswahl schaltet auf alle oder eine bestimmte Art. Im Austauschformat als
+  `kind`, `group`, `party`, `place` – ältere Fassungen zeigen solche Einträge als Spiel.
+- Community entries show who added them and when, and who changed them last (“Added on … by …, last changed on …
+  by …”). The server records this when it imports a contribution; the app never sends it. / Gemeinschaftseinträge
+  zeigen, wann und von wem sie aufgenommen und zuletzt geändert wurden („Aufgenommen am … von …, zuletzt geändert am
+  … von …“). Das trägt der Server beim Übernehmen eines Beitrags ein; die App schickt es nie mit.
+- The library now carries a database version: a Breadbin version shows a message instead of opening (and possibly
+  damaging) a library or backup from a newer version. Database and exchange format are documented in
+  `docs/Datenbank.md` and `docs/Austauschformat.md`. / Die Bibliothek trägt jetzt eine Datenbank-Version: Eine
+  Breadbin-Fassung zeigt eine Meldung, statt eine Bibliothek oder Sicherung aus einer neueren Fassung zu öffnen (und
+  womöglich zu beschädigen). Datenbank und Austauschformat sind in `docs/Datenbank.md` und `docs/Austauschformat.md`
+  beschrieben.
+- VICE: “Insert” in the details swaps the disk in the running VICE (drive 8, no restart), and “Screenshot” takes the
+  picture from VICE as title or in-game picture; the automatic title picture works with VICE too. Breadbin opens
+  VICE's monitor on 127.0.0.1 for this. / VICE: „Einlegen“ in den Details wechselt die Diskette im laufenden VICE
+  (Laufwerk 8, ohne Neustart), und „Bildschirmfoto“ nimmt das Bild aus VICE als Titelbild oder Spielszene; auch das
+  automatische Titelbild geht mit VICE. Breadbin öffnet dafür den Monitor von VICE auf 127.0.0.1.
+- New button ⤓ in each device row that is switched on: fetches saved games (disks a game changed in the launch
+  folder) – before, this was hidden in the ⋯ menu. / Neuer Knopf ⤓ in jeder eingeschalteten Gerätezeile: holt die
+  Spielstände (Disketten, die ein Spiel im Startordner verändert hat) – bisher nur im ⋯-Menü versteckt.
+- New view “Most launched”; the details show how often a game was launched (devices and emulator). / Neue Ansicht
+  „Am häufigsten gestartet“; die Details zeigen, wie oft ein Spiel gestartet wurde (Geräte und Emulator).
+- New dialog Collection → “Statistics …”: size, share with description, favorites, ratings, launches, decades, most
+  common genres and publishers. / Neuer Dialog Bestand → „Statistik …“: Größe, Anteil mit Beschreibung, Favoriten,
+  Bewertungen, Starts, Jahrzehnte, häufigste Genres und Herausgeber.
+- CSV export in English when the interface is English (column headers and technical details). / CSV-Export auf
+  Englisch, wenn die Oberfläche englisch ist (Spaltenköpfe und technische Angaben).
+- Devices that get a new IP address from the router are found again: an Ultimate by its ID, other devices by their MAC
+  address (also compared when there is an ID, in case it was changed). Breadbin moves the device together with the
+  folders scanned on it and its password when you click “Search again” on an unreachable device or run “Search
+  network” (it never searches on its own). / Geräte, die vom Router eine neue IP-Adresse bekommen, findet Breadbin
+  wieder: den Ultimate über seine Kennung, andere Geräte über die MAC-Adresse (auch bei vorhandener Kennung, falls sie
+  geändert wurde). Breadbin zieht das Gerät samt der darauf gescannten Ordner und dem Passwort um, wenn du am nicht
+  erreichbaren Gerät „Neu suchen“ klickst oder „Im Netz suchen“ auslöst (von selbst sucht Breadbin nicht).
+- Search: new setting “Start search: while typing / only on Enter” (helpful for very large collections or slow
+  computers). The search now runs in the background on its own database connection, so typing no longer freezes the
+  window, and a new search cancels the one still running. Searching descriptions and disk directories is faster
+  (about half the time for short search terms with ~90,000 files). / Suche: neue Einstellung „Suche starten: beim
+  Tippen / erst mit Enter“ (hilft bei sehr großen Sammlungen oder langsamen Rechnern). Die Suche läuft jetzt im
+  Hintergrund über eine eigene Datenbankverbindung, das Fenster hängt beim Tippen nicht mehr, und eine neue Suche
+  bricht die noch laufende ab. Die Suche in Beschreibungen und Disk-Verzeichnissen ist schneller (bei kurzen
+  Suchwörtern und ~90 000 Dateien etwa die halbe Zeit).
+- Games from collections in the GameBase64 folder style (`NAME_NNNNN_VV`, e.g. `LCP_04400_02.zip`): the GameBase64 button
+  in the details opens the game's page on gb64.com directly instead of a search. Only a link – no GB64 data is read. /
+  Spiele aus Sammlungen im GameBase64-Ordnerstil (`NAME_NNNNN_VV`, z. B. `LCP_04400_02.zip`): Der Knopf „GameBase64“ in
+  den Details öffnet direkt die Seite des Spiels auf gb64.com statt einer Suche. Nur ein Link – Daten aus GB64 werden
+  nicht gelesen.
+- BMX (Bare Metal X on Raspberry Pi 4/5/400) as a fourth kind of device: upload and start all formats including TAP via
+  the Remote API, disk swap without a restart, screenshots and automatic title pictures, saved games, copying, network
+  search (UDP broadcast on all network interfaces, plus HTTP), optional password. Tested by the BMX developer under Linux
+  (search, start, disk swap, screenshots). / BMX (Bare Metal X auf Raspberry Pi 4/5/400) als vierte Geräteart: alle
+  Formate einschließlich TAP über die Remote API hochladen und starten, Diskwechsel ohne Neustart, Bildschirmfotos und
+  automatisches Titelbild, Spielstände, Kopieren, Suche im Netz (UDP-Broadcast an alle Netzwerkverbindungen, dazu HTTP),
+  Passwort möglich. Vom BMX-Entwickler unter Linux geprüft (Suche, Start, Diskwechsel, Bildschirmfotos).
+- New button “Stop game” (■) next to each device that is switched on: resets the C64 without starting anything new –
+  also ends a running cartridge on the Ultimate and BMX. / Neuer Knopf „Spiel beenden“ (■) an jedem eingeschalteten
+  Gerät: setzt den C64 zurück, ohne etwas Neues zu starten – beendet auf Ultimate und BMX auch ein laufendes Modul.
+
 ## 0.9.4 (2026-11-23)
 
 - After a scan, a message lists which files are new and which are missing since the last scan (up to 500 each per

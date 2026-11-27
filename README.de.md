@@ -55,6 +55,13 @@ eine Anleitung ist eingebaut (Knopf „?“ oder F1).
   T64 und TAP; Ordner auf SD-Karte oder USB-Stick des Pi scannen, Spiele kopieren, Spielstände holen, PIN möglich
 - Mit BMC64 nicht möglich: Diskwechsel ohne Neustart, Bildschirmfotos, Ein-/Ausschalten
 
+**BMX (Raspberry Pi 4/5/400)**
+- Spiele über die Remote API von BMX hochladen und starten (im BMX-Menü „Remote API“ einschalten, Passwort möglich):
+  PRG, P00, T64, TAP, CRT und alle Disk-Abbilder per Autostart; Diskwechsel ohne Neustart, Bildschirmfotos und
+  automatisches Titelbild, Spielstände, Spiele kopieren, Suche im Netz
+- Vom BMX-Entwickler geprüft. Startordner müssen unter
+  `disks/`, `tapes/` oder `carts/` eines Laufwerks liegen (`/USER/disks/Breadbin`, ohne USER-Partition `/SYS/disks/Breadbin`). Nicht möglich: Ein-/Ausschalten
+
 **TeensyROM (ungetestet)**
 - Spiele über das TCP-Fernsteuerprotokoll des TeensyROM hochladen und starten (Port 2112, „Enable TCP Listener“):
   PRG, P00, T64, CRT und Disketten mit einer Programmdatei; Ordner auf SD-Karte oder USB-Stick scannen, Spiele kopieren
@@ -69,8 +76,9 @@ eine Anleitung ist eingebaut (Knopf „?“ oder F1).
 ## Herunterladen und erster Start
 
 Die Pakete liegen auf der [Release-Seite](../../releases): macOS (Universal-DMG für Apple Silicon und
-Intel), Windows (MSI- oder EXE-Installer, dazu eine tragbare ZIP-Fassung für den USB-Stick) und Linux
-(AppImage, deb, rpm).
+Intel, ab macOS 11), Windows 10/11 64 Bit (MSI- oder EXE-Installer, dazu eine tragbare ZIP-Fassung für den
+USB-Stick) und Linux (AppImage, deb, rpm). Windows 7 und 8 gehen nicht: Microsoft liefert die nötige
+WebView2 dafür seit 2023 nicht mehr, Breadbin bricht dort mit Fehlern wie `ProcessPrng` ab.
 
 **Tragbar (Windows):** `Breadbin_…_x64-portable.zip` entpacken. Solange neben `Breadbin.exe` der Ordner
 `BreadbinData` liegt, bleiben alle Daten darin; ein anderer Laufwerksbuchstabe des Sticks wird beim Start
@@ -95,7 +103,9 @@ ersten Start:
 - macOS, Windows und Linux (AppImage unter Fedora)
 - BMC64 5.5.2 auf einem Raspberry Pi 3B+ (Ethernet): Netzsuche, Scan eines Ordners auf dem Pi, Hochladen und Starten
   von PRG, D64, CRT und TAP, Spielstände, Kopieren
-- Noch nicht getestet: 1541 Ultimate II+ und TeensyROM (nur nach der Protokoll-Doku gebaut). Bandabbilder (TAP) lassen sich auf dem Ultimate nicht starten (auf BMC64 und im Emulator schon).
+- BMX auf Raspberry Pi 4/5: vom BMX-Entwickler unter Linux geprüft (Netzsuche, Start von PRG, D64, G64, TAP und CRT samt
+  EasyFlash, Diskwechsel, Bildschirmfotos)
+- Noch nicht getestet: 1541 Ultimate II+ und TeensyROM (nur nach der Protokoll-Doku gebaut). Bandabbilder (TAP) lassen sich auf dem Ultimate nicht starten (auf BMC64, BMX und im Emulator schon).
 
 ## Lizenz
 

@@ -109,6 +109,21 @@ pub struct SharedGame {
     /// überlesen, statt das Spiel wegen einer unbekannten Bildart abzulehnen.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub more_images: BTreeMap<String, String>,
+    /// Herkunft (wann/von wem aufgenommen und geändert). Trägt nur der Breadbin-Server beim Übernehmen ein;
+    /// eigene Einträge schicken keine mit, deshalb ändert das Feld den Fingerabdruck nicht.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub history: Vec<crate::db::HistoryEntry>,
+    /// Art (`demo`, `intro`, `music`, `diskmag`, `tool`, `graphics`); fehlt bei Spielen. Ältere Fassungen
+    /// überlesen das Feld (und zeigen solche Einträge als Spiel).
+    #[serde(skip_serializing_if = "is_empty")]
+    pub kind: String,
+    /// Bei Demos usw.: Gruppe, Party und Platzierung dort.
+    #[serde(skip_serializing_if = "is_empty")]
+    pub group: String,
+    #[serde(skip_serializing_if = "is_empty")]
+    pub party: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub place: Option<u32>,
 }
 
 #[derive(Debug, Default, Clone, Serialize)]
@@ -191,7 +206,7 @@ pub type Shareable = (SharedGame, Vec<(String, String)>);
 pub fn shareable(conn: &Connection) -> Result<Vec<Shareable>> {
     let mut st = conn.prepare(
         "SELECT c.sha1, c.md5, c.crc32, c.size, c.format, m.title, m.year, m.publisher, m.developer,
-                m.genres, m.players, m.synopsis, m.game_id, m.synopsis_en
+                m.genres, m.players, m.synopsis, m.game_id, m.synopsis_en, m.kind, m.grp, m.party, m.place
          FROM metadata m JOIN contents c ON c.sha1 = m.sha1
          WHERE m.provider = ? AND m.status = 'ok'
          ORDER BY c.sha1",
@@ -218,6 +233,12 @@ pub fn shareable(conn: &Connection) -> Result<Vec<Shareable>> {
                     .collect(),
                 players: opt(r.get(10)?),
                 screenscraper_id: opt(r.get(12)?),
+                kind: opt(r.get(14)?),
+                group: opt(r.get(15)?),
+                party: opt(r.get(16)?),
+                place: r
+                    .get::<_, Option<i64>>(17)?
+                    .and_then(|p| u32::try_from(p).ok()),
                 ..texts_fields(opt(r.get(11)?), opt(r.get(13)?))
             })
         })?
@@ -858,6 +879,30 @@ fn read_entry<R: Read + std::io::Seek>(
 }
 
 /// Prüft ein Spiel aus einer fremden Datei, bevor etwas gespeichert wird.
+/// Herkunft zum Speichern: höchstens 50 Einträge, Namen höchstens 100 Zeichen; leer = NULL.
+fn history_json(h: &[crate::db::HistoryEntry]) -> Option<String> {
+    if h.is_empty() {
+        return None;
+    }
+    let h: Vec<crate::db::HistoryEntry> = h
+        .iter()
+        .take(50)
+        .map(|e| crate::db::HistoryEntry {
+            date: e.date.chars().take(10).collect(),
+            by: e.by.trim().chars().take(100).collect(),
+            action: e.action.chars().take(10).collect(),
+            contribution: e.contribution,
+            edited_by: e
+                .edited_by
+                .iter()
+                .take(5)
+                .map(|n| n.trim().chars().take(100).collect())
+                .collect(),
+        })
+        .collect();
+    serde_json::to_string(&h).ok()
+}
+
 fn check_game(g: &SharedGame) -> Result<()> {
     ensure!(
         g.version <= VERSION,
@@ -877,6 +922,20 @@ fn check_game(g: &SharedGame) -> Result<()> {
     ensure!(
         g.screenscraper_id.bytes().all(|b| b.is_ascii_digit()) && g.screenscraper_id.len() <= 12,
         tr!("ungültige Spielnummer", "invalid game number")
+    );
+    ensure!(
+        g.kind.is_empty()
+            || g.kind == "game"
+            || crate::db::normalize_kind(&g.kind).as_deref() == Some(g.kind.as_str()),
+        tr!("ungültige Art {}", "invalid kind {}", g.kind)
+    );
+    ensure!(
+        g.group.chars().count() <= 200 && g.party.chars().count() <= 200,
+        tr!("Gruppe oder Party zu lang", "group or party too long")
+    );
+    ensure!(
+        g.place.is_none_or(|p| (1..=999).contains(&p)),
+        tr!("ungültige Platzierung", "invalid place")
     );
     let kinds = g
         .images
@@ -1013,8 +1072,9 @@ pub fn import(conn: &mut Connection, media_dir: &Path, path: &Path) -> Result<Im
             let (de, en) = texts_of(&g);
             tx.execute(
                 "INSERT OR REPLACE INTO metadata(sha1, provider, status, game_id, title, synopsis, year, publisher,
-                                                 developer, genres, players, rating, fetched_at, synopsis_en)
-                 VALUES(?, ?, 'ok', ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)",
+                                                 developer, genres, players, rating, fetched_at, synopsis_en, history,
+                                                 kind, grp, party, place)
+                 VALUES(?, ?, 'ok', ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)",
                 params![
                     g.sha1,
                     PROVIDER_SHARED,
@@ -1027,7 +1087,12 @@ pub fn import(conn: &mut Connection, media_dir: &Path, path: &Path) -> Result<Im
                     opt(&genres),
                     opt(&g.players),
                     now(),
-                    en
+                    en,
+                    history_json(&g.history),
+                    crate::db::normalize_kind(&g.kind),
+                    opt(&g.group),
+                    opt(&g.party),
+                    g.place
                 ],
             )?;
             for (kind, data, ext) in images {
@@ -1145,6 +1210,46 @@ mod tests {
         assert_eq!(meta2.provider, PROVIDER_SHARED);
         assert_eq!(meta2.synopsis.as_deref(), Some("Deutsch"));
         assert_eq!(meta2.synopsis_en.as_deref(), Some("English"));
+    }
+
+    #[test]
+    fn demo_teilen_und_einlesen() {
+        let (dir, conn) = library(&["eigen.prg"]);
+        let media = dir.path().join("media");
+        let own = sha1_of(&conn, "eigen");
+        let m = metadata::OwnMeta {
+            title: "Edge of Disgrace".into(),
+            kind: "Demo".into(),
+            group: "Booze Design".into(),
+            party: "X'2008".into(),
+            place: "1".into(),
+            developer: "Code: HCL".into(),
+            ..Default::default()
+        };
+        metadata::save_own(&conn, std::slice::from_ref(&own), &m, true).unwrap();
+        let out = dir.path().join("teilen.zip");
+        assert_eq!(export(&conn, &media, &out, "Breadbin test").unwrap(), 1);
+        let mut zip = zip::ZipArchive::new(std::fs::File::open(&out).unwrap()).unwrap();
+        let raw = read_entry(&mut zip, &game_path(&own), MAX_JSON).unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&raw).unwrap();
+        assert_eq!(v["kind"], "demo");
+        assert_eq!(v["group"], "Booze Design");
+        assert_eq!(v["place"], 1);
+        let (dir2, mut conn2) = library(&["eigen.prg"]);
+        import(&mut conn2, &dir2.path().join("media"), &out).unwrap();
+        let meta = db::details(&conn2, &own).unwrap().meta.unwrap();
+        assert_eq!(meta.kind.as_deref(), Some("demo"));
+        assert_eq!(meta.party.as_deref(), Some("X'2008"));
+        assert_eq!(meta.place, Some(1));
+        // Spiele schreiben das Feld nicht (Fingerabdruck und ältere Fassungen bleiben gleich).
+        let spiel = SharedGame::default();
+        assert!(!serde_json::to_string(&spiel).unwrap().contains("kind"));
+        // Ungültige Art wird abgelehnt.
+        let bad = SharedGame {
+            kind: "Demo!".into(),
+            ..Default::default()
+        };
+        assert!(check_game(&bad).is_err());
     }
 
     #[test]
@@ -1367,6 +1472,47 @@ mod tests {
                 .unwrap()
                 .iter()
                 .any(|q| q.sha1 == fresh)
+        );
+    }
+
+    #[test]
+    fn herkunft_wird_eingelesen_aber_nie_mitgeschickt() {
+        let (dir, conn) = library(&["eigen.prg"]);
+        let media = dir.path().join("media");
+        let own = sha1_of(&conn, "eigen");
+        let m = metadata::OwnMeta {
+            title: "Space Gun".into(),
+            ..Default::default()
+        };
+        metadata::save_own(&conn, std::slice::from_ref(&own), &m, false).unwrap();
+        let out = dir.path().join("teilen.zip");
+        export(&conn, &media, &out, "test").unwrap();
+        let mut zip = zip::ZipArchive::new(std::fs::File::open(&out).unwrap()).unwrap();
+        let raw = read_entry(&mut zip, &game_path(&own), MAX_JSON).unwrap();
+        assert!(
+            !String::from_utf8_lossy(&raw).contains("history"),
+            "eigene Einträge schicken keine Herkunft mit (Fingerabdruck bleibt)"
+        );
+
+        // So kommt ein Eintrag vom Server zurück: mit Herkunft.
+        let repo = dir.path().join("stand");
+        zip.extract(&repo).unwrap();
+        let path = repo.join(game_path(&own));
+        let mut v: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        v["history"] = serde_json::json!([
+            {"date": "2026-11-12", "by": "Breadbin", "action": "added"},
+            {"date": "2026-11-24", "by": "Rumpelkammer", "action": "changed", "contribution": 25}
+        ]);
+        std::fs::write(&path, serde_json::to_vec(&v).unwrap()).unwrap();
+        let (d2, mut c2) = library(&["eigen.prg"]);
+        let r = import(&mut c2, &d2.path().join("media"), &repo).unwrap();
+        assert_eq!((r.imported, r.errors.len()), (1, 0), "{:?}", r.errors);
+        let h = db::details(&c2, &own).unwrap().meta.unwrap().history;
+        assert_eq!(h.len(), 2);
+        assert_eq!(
+            (h[1].by.as_str(), h[1].action.as_str(), h[1].contribution),
+            ("Rumpelkammer", "changed", Some(25))
         );
     }
 

@@ -171,7 +171,7 @@
 <div class="wrap stage">
   <div>
     <h1 data-t="h1">LOAD"*",8,1 <em>war gestern.</em></h1>
-    <p class="lede" data-t="lede">Breadbin sortiert deine C64-Sammlung, beschreibt jedes Spiel und startet es mit einem Klick auf deinem Ultimate 64 oder C64 Ultimate – Disketten, Module, Cracks, alles an einem Ort.</p>
+    <p class="lede" data-t="lede">Breadbin sortiert deine C64-Sammlung, beschreibt jedes Spiel und startet es mit einem Klick auf deinem Ultimate 64, C64 Ultimate, Raspberry Pi oder im Emulator – Disketten, Module, Cracks, alles an einem Ort.</p>
     <div class="cta">
       <a class="btn primary" href="#download" data-t="cta1">Kostenlos laden</a>
       <a class="btn" href="https://breadbindb.8bitcavern.de/" data-t="cta2">Gemeinschaftsdaten</a>
@@ -241,6 +241,10 @@
     <div class="d reveal"><h3>Ultimate 64 Elite</h3><p data-t="d2">Alle Formate außer Band, Bildschirmfoto über Ethernet.</p><span class="badge" data-t="ok">geprüft</span></div>
     <div class="d reveal"><h3>C64 Ultimate</h3><p data-t="d3">Starten, Diskwechsel, Bildschirmfoto.</p><span class="badge" data-t="ok">geprüft</span></div>
     <div class="d reveal"><h3>1541 Ultimate II+</h3><p data-t="d4">Gleicher Weg über REST und FTP; wir suchen Testerinnen und Tester.</p><span class="badge open" data-t="open">ungetestet</span></div>
+    <div class="d reveal"><h3>BMC64 (Raspberry Pi)</h3><p data-t="d5">Hochladen und Starten aller Formate samt Band, Ordner auf dem Pi lesen.</p><span class="badge" data-t="ok">geprüft</span></div>
+    <div class="d reveal"><h3>BMX (Raspberry Pi 4/5)</h3><p data-t="d6">Starten aller Formate samt Band, Diskwechsel, Bildschirmfoto.</p><span class="badge" data-t="ok">geprüft</span></div>
+    <div class="d reveal"><h3>TeensyROM</h3><p data-t="d7">Starten über das Netz, nach der Protokoll-Doku gebaut; wir suchen Testerinnen und Tester.</p><span class="badge open" data-t="open">ungetestet</span></div>
+    <div class="d reveal"><h3>VICE · Denise</h3><p data-t="d8">Ohne Gerät am Rechner spielen; bei VICE mit Diskwechsel und Bildschirmfoto.</p><span class="badge" data-t="ok">geprüft</span></div>
   </div>
 </div></section>
 
@@ -266,7 +270,8 @@
     <div class="o reveal" data-os="lin"><h3>Linux <span class="mine-tag" data-t="mine">· dein System</span></h3><p data-t="o3">AppImage für alle Distributionen, dazu deb und rpm.</p><div class="row"><a class="btn primary" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.AppImage">AppImage</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin_amd64.deb">.deb</a><a class="btn" href="https://breadbindb.8bitcavern.de/dl.php?f=Breadbin.x86_64.rpm">.rpm</a></div></div>
   </div>
   <details class="reveal"><summary data-t="q1">Warum warnt mein System beim ersten Start?</summary><p data-t="a1">Die Pakete sind nicht mit einem bezahlten Zertifikat signiert. macOS: Meldung mit „Fertig“ schließen, dann Systemeinstellungen → Datenschutz &amp; Sicherheit → „Dennoch öffnen“ und den Zugriff aufs lokale Netzwerk erlauben. Windows: „Weitere Informationen“ → „Trotzdem ausführen“.</p></details>
-  <details class="reveal"><summary data-t="q2">Brauche ich ein Ultimate-Gerät?</summary><p data-t="a2">Nein. Katalog, Beschreibungen, Listen und Gemeinschaftsdaten funktionieren ohne Gerät. Nur Starten und Bildschirmfotos brauchen einen Ultimate im Netz.</p></details>
+  <details class="reveal"><summary data-t="q5">Läuft Breadbin unter Windows 7 oder 8?</summary><p data-t="a5">Nein. Breadbin braucht Windows 10 oder 11 (64 Bit), weil die Oberfläche auf Microsofts WebView2 läuft, das es für Windows 7 und 8 seit 2023 nicht mehr gibt. Fehlermeldungen wie „ProcessPrng“ oder „PackageIdFromFullName“ beim Start bedeuten genau das.</p></details>
+  <details class="reveal"><summary data-t="q2">Brauche ich ein Ultimate-Gerät?</summary><p data-t="a2">Nein. Katalog, Beschreibungen, Listen und Gemeinschaftsdaten funktionieren ohne Gerät. Zum Starten genügt auch ein Emulator wie VICE; auf echter Hardware brauchst du einen Ultimate, BMC64, BMX oder TeensyROM im Netz.</p></details>
   <details class="reveal"><summary data-t="q3">Woher kommen Beschreibungen und Bilder?</summary><p data-t="a3">Aus deinen eigenen Angaben, den Gemeinschaftsdaten und – wenn du willst – von ScreenScraper.fr mit eigenem Konto. ScreenScraper-Inhalte bleiben bei dir und werden nie weitergegeben.</p></details>
   <details class="reveal"><summary data-t="q4">Zählt Breadbin, wer es nutzt?</summary><p data-t="a4">Nur anonym: Die App prüft höchstens einmal am Tag, ob es eine neue Fassung gibt. Der Server zählt diese Abrufe je Tag und Version, dazu die Downloads der Pakete. IP-Adressen werden nicht gespeichert, nur Tageszahlen; es gibt keine Kennung je Installation und keine Cookies.</p></details>
   <p class="reveal" data-t="faqmore">Mehr Fragen? Die ausführliche <a href="anleitung/">Anleitung</a> ist dieselbe wie in der App.</p>
@@ -282,7 +287,7 @@
 const EN = {
   n1: "How it works", n2: "Features", n3: "Community", n4: "Download", n5: "Manual",
   h1: 'LOAD"*",8,1 <em>is history.</em>',
-  lede: "Breadbin sorts your C64 collection, describes every game and starts it with one click on your Ultimate 64 or C64 Ultimate – disks, cartridges, cracks, all in one place.",
+  lede: "Breadbin sorts your C64 collection, describes every game and starts it with one click on your Ultimate 64, C64 Ultimate, Raspberry Pi or in an emulator – disks, cartridges, cracks, all in one place.",
   cta1: "Download for free", cta2: "Community data", f1: "files in 80 s", f2: "formats", f3: "operating systems",
   "a-h": "Three steps from hard disk to screen", "a-sub": "No command line, no hunting through folders. Breadbin remembers where everything is – even on the stick inside the device.",
   s1h: "Add folders", s1p: "Hard disk, network drive or the Ultimate's USB stick. ZIP archives are read too; identical files count once.",
@@ -298,12 +303,15 @@ const EN = {
   g1: "Main window: list, details, title and in-game picture", g2: "Light or dark – like your system", g3: "English and German",
   "d-h": "Made for these devices", d1: "Launch, screenshot, read the stick, wake over Wi-Fi.", d2: "All formats except tape, screenshot over Ethernet.",
   d3: "Launch, disk swap, screenshot.", d4: "Same route via REST and FTP; we are looking for testers.", ok: "tested", open: "untested",
+  d5: "Upload and start all formats including tape, read folders on the Pi.", d6: "Start all formats including tape, disk swap, screenshot.",
+  d7: "Start over the network, built from the protocol documentation; we are looking for testers.", d8: "Play on your computer without a device; disk swap and screenshot with VICE.",
   "c-h": "A database everyone feeds", "c-sub": "Write a description, take a screenshot, click “Submit contribution”. After a short review every Breadbin user has your details – free under CC BY-SA 4.0, no account.",
   "c-btn": "Statistics and search", c1: "entries", c2: "updated",
   "dl-h": "Download", "dl-sub": "Free and open source (GPL-3.0).", mine: "· your system",
   o1: "Universal for Apple Silicon and Intel, macOS 11 or later.", o2: "Windows 10 and 11, 64-bit. Portable as ZIP for a USB stick.", o3: "AppImage for all distributions, plus deb and rpm.",
   q1: "Why does my system warn on first start?", a1: "The packages are not signed with a paid certificate. macOS: close the message with “Done”, then System Settings → Privacy & Security → “Open Anyway”, and allow local network access. Windows: “More info” → “Run anyway”.",
-  q2: "Do I need an Ultimate device?", a2: "No. Catalog, descriptions, lists and community data work without a device. Only launching and screenshots need an Ultimate on the network.",
+  q5: "Does Breadbin run on Windows 7 or 8?", a5: "No. Breadbin needs Windows 10 or 11 (64-bit), because its interface runs on Microsoft's WebView2, which is no longer available for Windows 7 and 8 since 2023. Error messages such as “ProcessPrng” or “PackageIdFromFullName” at start mean exactly that.",
+  q2: "Do I need an Ultimate device?", a2: "No. Catalog, descriptions, lists and community data work without a device. An emulator such as VICE is enough for launching; on real hardware you need an Ultimate, BMC64, BMX or TeensyROM on the network.",
   q3: "Where do descriptions and pictures come from?", a3: "From your own details, the community data and – if you want – ScreenScraper.fr with your own account. ScreenScraper content stays with you and is never passed on.",
   q4: "Does Breadbin count who uses it?", a4: "Only anonymously: the app checks at most once a day whether there is a new version. The server counts these requests per day and version, plus package downloads. IP addresses are not stored, only daily totals; there is no per-installation ID and no cookies.",
   faqmore: "More questions? The full <a href=\"anleitung/\">manual</a> is the same as in the app.",

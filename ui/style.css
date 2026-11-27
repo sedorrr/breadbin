@@ -130,6 +130,7 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #list tbody tr:hover { background: var(--row-hover); }
 #list tbody tr.selected { background: var(--row-sel); }
 #list td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.kind-badge { margin-left: 4px; font-weight: 500; }
 .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--row-sel); }
 #empty { color: var(--muted); padding: 24px 16px; }
 
@@ -447,6 +448,13 @@ dialog#about-dialog { width: min(560px, 94vw); font-size: 13.5px; line-height: 1
 .hint-mark { color: #d08a00; margin-left: 6px; cursor: help; }
 #btn-cleanup { margin-top: 8px; }
 .cleanup-block { display: grid; gap: 4px; margin: 10px 0; }
+.stats-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+#statistics-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 20px; }
+#statistics-body h4 { margin: 10px 0 4px; }
+#statistics-body table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+#statistics-body td { padding: 1px 0; vertical-align: top; }
+#statistics-body td.n { text-align: right; padding-left: 10px; white-space: nowrap; }
+#statistics-body .bar { display: block; height: 4px; border-radius: 2px; background: var(--accent, #4a6cd4); opacity: .55; margin-top: 2px; }
 .cleanup-block h4 { margin: 0; }
 .cleanup-block p { margin: 0; }
 
@@ -455,3 +463,6 @@ dialog#about-dialog { width: min(560px, 94vw); font-size: 13.5px; line-height: 1
 
 .emu-game-args { display: flex; align-items: center; gap: 6px; flex-basis: 100%; font-size: 12px; color: var(--muted, inherit); }
 .emu-game-args input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+/* Felder je Art im Dialog „Angaben“: hidden gegen display von label durchsetzen */
+#own-dialog [hidden] { display: none !important; }

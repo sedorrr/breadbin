@@ -45,7 +45,14 @@ GitHub Repositorys herunter); Breadbin findet `breadbin-share.json` auch eine Eb
 | `synopsis` | nein | Beschreibung, Absätze durch Leerzeile: Deutsch bzw. die einzige vorhandene Sprache (so lesen es Fassungen vor 0.8.0) |
 | `texts` | nein | Beschreibung je Sprache, `{"de": "…", "en": "…"}` (seit 0.8.0). Steht nur da, wenn es einen englischen Text gibt; dann ist `synopsis` = `texts.de`, ohne Deutsch = `texts.en`. Einlesen: `texts` vor `synopsis` |
 | `images` | nein | Bildart → Pfad im Archiv; Arten: `sstitle` (Titelbild), `ss` (Spielszene), `box-2D` (Verpackung) |
+| `more_images` | nein | weitere Spielszenen `ss2` … `ss4` → Pfad im Archiv (seit 0.9.4; eigenes Feld, damit ältere Fassungen es überlesen) |
 | `screenscraper_id` | nein | Spielnummer bei ScreenScraper, nur zum Zusammenfassen von Fassungen |
+| `kind` | nein | Art (seit 0.9.5): `demo`, `intro`, `music`, `diskmag`, `tool`, `graphics`; fehlt bei Spielen (`game` gilt als fehlend). Ältere Fassungen überlesen das Feld und zeigen den Eintrag als Spiel. Cracktros werden nicht aufgenommen |
+| `group`, `party` | nein | bei anderen Arten als Spielen: Gruppe bzw. Party (Text); Mitwirkende stehen in `developer`, z. B. `Code: …, Grafik: …, Musik: …` |
+| `place` | nein | Platzierung auf der Party, ganze Zahl 1–999 |
+
+`genres` und `players` gelten nur für Spiele.
+| `history` | nein | Herkunft, älteste zuerst: `[{"date": "JJJJ-MM-TT", "by": "Name", "action": "added"/"changed", "contribution": 25, "edited_by": ["Breadbin"]}]` (`edited_by` nur, wenn der Eintrag auf der Prüfseite bearbeitet wurde). Trägt nur der Breadbin-Server beim Übernehmen ein (Name = selbst gewählter Name des Einsenders, ohne Angabe „anonym“); mitgeschickte Werte werden verworfen. Die App schickt das Feld nie mit, es zählt nicht zum Fingerabdruck |
 
 Inhalt bezeichnet die Spieldatei selbst: Bei Disketten- und Modulabbildern die ganze Datei, bei Dateien in ZIP-Archiven
 das ausgepackte Abbild. Mehrere Disketten eines Spiels sind mehrere Einträge mit denselben Angaben.
@@ -69,6 +76,11 @@ Neue, freiwillige Felder dürfen in Version 1 dazukommen; ältere Fassungen übe
 Pflicht, steigt `version` – Breadbin lehnt dann Dateien mit höherer Version mit einem Hinweis ab, statt sie falsch zu
 lesen.
 
+Festgeschrieben für 1.0 (Stand 2026-11-26): Die oben genannten Felder und ihre Bedeutung bleiben in Version 1 gleich.
+Bisher dazugekommen sind `texts` (0.8.0), `more_images` (0.9.4) sowie `kind`, `group`, `party`, `place` (0.9.5). Eine neue Bildart kommt nicht in `images`, sondern
+in ein eigenes Feld wie `more_images`, weil ältere Fassungen ein Spiel mit unbekannter Bildart in `images` ablehnen.
+Wie die App ihre eigene Datenbank versioniert, steht in `Datenbank.md`.
+
 ---
 
 # English
@@ -90,8 +102,14 @@ file names without folders), `title`; optional `year` (year of the original), `p
 `genres` (list, from the app’s fixed genre list), `synopsis` (paragraphs separated by a blank line; German or the only
 language available), `texts` (since 0.8.0: per-language descriptions `{"de", "en"}`, written only when an English text
 exists; readers prefer `texts` over `synopsis`), `images`
-(kind → path; kinds `sstitle` title screen, `ss` in-game, `box-2D` box), `screenscraper_id` (only for grouping
-versions).
+(kind → path; kinds `sstitle` title screen, `ss` in-game, `box-2D` box), `more_images` (since 0.9.4: further in-game
+pictures `ss2` … `ss4`; a separate field so older versions skip it), `screenscraper_id` (only for grouping
+versions), `history` (origin, oldest first: `[{"date", "by", "action": "added"/"changed", "contribution", "edited_by"}]`, `edited_by` when edited on the review page; written
+only by the Breadbin server when importing a contribution – values sent along are dropped; the app never sends it and
+it is not part of the fingerprint), `kind` (since 0.9.5: `demo`, `intro`, `music`, `diskmag`, `tool`, `graphics`;
+absent for games, `game` counts as absent; older versions ignore it and show the entry as a game; cracktros are not
+included), `group` and `party` (text, for kinds other than games; credits go into `developer`, e.g. `Code: …,
+graphics: …, music: …`), `place` (party placing, whole number 1–999). `genres` and `players` only apply to games.
 
 **Limits and rules:** entry ≤ 256 KB, picture ≤ 8 MB, exchange file ≤ 512 MB, ≤ 200,000 entries. Pictures PNG, JPEG,
 GIF or WebP matching their extension; C64 screenshots ideally 320 × 200 without border. Only your own work – no texts
@@ -101,3 +119,8 @@ repository.
 
 **Changes:** new optional fields may be added within version 1; older versions ignore them. If a field changes meaning
 or becomes required, `version` goes up and older Breadbin versions refuse such files with a notice.
+
+Fixed for 1.0 (as of 2026-11-26): the fields above and their meaning stay the same in version 1. Added so far:
+`texts` (0.8.0), `more_images` (0.9.4) and `kind`, `group`, `party`, `place` (0.9.5). A new picture kind does not go into `images` but into a separate field like
+`more_images`, because older versions reject a game with an unknown kind in `images`. How the app versions its own
+database is described in `Datenbank.md`.

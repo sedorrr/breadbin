@@ -63,6 +63,31 @@ fn damaged(what: &str) -> FileInfo {
     }
 }
 
+/// Technische Angabe (beim Scan deutsch gespeichert, die Filter suchen danach) auf Englisch –
+/// gleiche Regeln wie `tDetail` in `ui/i18n.js`. Unbekanntes bleibt, wie es ist.
+pub fn detail_en(s: &str) -> String {
+    if let Some(what) = s.strip_suffix(": Datei beschädigt oder unbekannter Aufbau") {
+        return format!("{what}: file damaged or unknown layout");
+    }
+    for (de, en) in [
+        ("Ladeadresse ", "Load address "),
+        ("Normales Modul,", "Normal cartridge,"),
+        ("Modultyp ", "Cartridge type "),
+        ("Band-Abbild Version ", "Tape image version "),
+    ] {
+        if let Some(rest) = s.strip_prefix(de) {
+            return format!("{en}{rest}");
+        }
+    }
+    if let Some(n) = s
+        .strip_prefix("GCR-Abbild, ")
+        .and_then(|r| r.strip_suffix(" Halbspuren"))
+    {
+        return format!("GCR image, {n} half tracks");
+    }
+    s.to_string()
+}
+
 fn u16le(d: &[u8], o: usize) -> u16 {
     u16::from_le_bytes([d[o], d[o + 1]])
 }
@@ -596,6 +621,17 @@ mod tests {
         let info = analyze("CRT", &testdata::crt("", 999));
         assert_eq!(info.image_name, None);
         assert!(info.detail.unwrap().starts_with("Modultyp 999"));
+        assert_eq!(detail_en("Modultyp 999, 8 KB"), "Cartridge type 999, 8 KB");
+        assert_eq!(
+            detail_en("D64: Datei beschädigt oder unbekannter Aufbau"),
+            "D64: file damaged or unknown layout"
+        );
+        assert_eq!(
+            detail_en("GCR-Abbild, 84 Halbspuren"),
+            "GCR image, 84 half tracks"
+        );
+        assert_eq!(detail_en("Ladeadresse $C000"), "Load address $C000");
+        assert_eq!(detail_en("EasyFlash, 9 KB"), "EasyFlash, 9 KB");
     }
 
     #[test]

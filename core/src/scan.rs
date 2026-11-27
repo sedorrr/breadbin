@@ -569,7 +569,8 @@ pub fn scan_local(
 }
 
 /// Durchsucht einen Ordner auf einem Gerät: Ultimate per FTP (`ftp://host/USB0/Spiele`), BMC64 über
-/// seine Weboberfläche (`bmc64://host/SD/Spiele`), TeensyROM über TCP 2112 (`teensyrom://host/SD/Spiele`).
+/// seine Weboberfläche (`bmc64://host/SD/Spiele`), TeensyROM über TCP 2112 (`teensyrom://host/SD/Spiele`),
+/// BMX über seine Remote API (`bmx://host/USER/disks/Spiele`).
 ///
 /// Unverändert gilt eine Datei bei gleicher Größe und gleicher MLSD-Zeit; kann das Gerät
 /// kein MLSD, nur bei gleicher Größe.

@@ -3,6 +3,7 @@
 pub mod awake;
 pub mod backup;
 pub mod bmc64;
+pub mod bmx;
 pub mod db;
 pub mod emulator;
 pub mod formats;
@@ -21,3 +22,4 @@ pub mod screenshot;
 pub mod share;
 pub mod teensyrom;
 pub mod update;
+pub mod vicemon;

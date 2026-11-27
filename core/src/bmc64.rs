@@ -8,6 +8,8 @@
 //! - PIN (optional) als HTTP Basic Auth, Benutzername egal.
 //! - Struktur-Aufrufe (`mkdir`, rekursives Löschen) brauchen die Kopfzeile `X-BMC64-Web: 1`.
 //! - Der Server bedient eine Verbindung zur Zeit: alles nacheinander.
+//! - `POST /api/reset` (Hard Reset, für „Spiel beenden“) am Pi 3B+ geprüft (2026-11-24): PRG endet beim
+//!   Startbildschirm, ein per Autostart gestartetes Modul startet danach wieder.
 //! - Autostart setzt die Maschine immer zurück; Diskwechsel ohne Neustart, Bildschirmfoto und
 //!   Modul-Auswerfen gibt es nicht.
 //! - 5.5.0 bricht größere Uploads oft mit 400 „upload truncated“ ab (behoben ab 5.5.1): wiederholen.
@@ -379,6 +381,13 @@ impl Bmc64 {
             64 * 1024,
         )
         .map(|_| ())
+    }
+
+    /// Hard Reset der Emulation (`POST /api/reset`). Ein per Autostart eingelegtes Modul bleibt
+    /// stecken – BMC64 kann es über die Weboberfläche nicht auswerfen.
+    pub fn reset(&self) -> Result<()> {
+        self.call("POST", "/api/reset", &[], Body::None, false, 64 * 1024)
+            .map(|_| ())
     }
 
     pub fn delete(&self, path: &str) -> Result<()> {

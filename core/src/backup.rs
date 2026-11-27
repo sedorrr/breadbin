@@ -133,6 +133,13 @@ pub fn unpack_db(path: &Path, db_out: &Path) -> Result<Manifest> {
             "database in the backup is incomplete"
         )
     );
+    ensure!(
+        crate::db::schema_version(&conn)? <= crate::db::SCHEMA_VERSION,
+        tr!(
+            "Die Sicherung stammt aus einer neueren Fassung von Breadbin.",
+            "The backup comes from a newer version of Breadbin."
+        )
+    );
     Ok(manifest)
 }
 

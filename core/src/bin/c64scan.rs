@@ -27,7 +27,7 @@
 //!
 //! Ein Ordner kann auch auf einem Ultimate-Gerät liegen: `ftp://192.0.2.168/USB2/Spiele`,
 //! oder auf einem BMC64: `bmc64://192.0.2.170/SD/Spiele`, auf einem TeensyROM:
-//! `teensyrom://192.0.2.80/SD/Spiele` (ungetestet).
+//! `teensyrom://192.0.2.80/SD/Spiele` oder auf einem BMX: `bmx://192.0.2.90/USER/disks/Spiele` (beide ungetestet).
 
 use anyhow::{Context, Result};
 use breadbin_core::{db, ftp, launch, power, scan};
@@ -81,6 +81,8 @@ fn main() -> Result<()> {
                 upload_dir: rest[1].clone(),
                 wifi_mac: String::new(),
                 kind: device_kind(&rest[0]),
+                unique_id: String::new(),
+                mac: String::new(),
             };
             let (deleted, kept) = launch::clean_upload_dir(&dev, "")?;
             println!("{deleted} gelöscht, {kept} fremde Dateien behalten");
@@ -101,6 +103,14 @@ fn main() -> Result<()> {
         if info.kind == breadbin_core::remote::BMC64 {
             let st = breadbin_core::bmc64::Bmc64::new(host, "").status()?;
             for h in breadbin_core::bmc64::hints(&st) {
+                println!("Hinweis: {h}");
+            }
+            return Ok(());
+        }
+        if info.kind == breadbin_core::remote::BMX {
+            let st = breadbin_core::bmx::Bmx::new(host, "").state()?;
+            println!("{st:?}");
+            for h in breadbin_core::bmx::hints(&st) {
                 println!("Hinweis: {h}");
             }
             return Ok(());
@@ -142,6 +152,17 @@ fn main() -> Result<()> {
     if rest.first().map(String::as_str) == Some("--screenshot") {
         let (host, out) = (&rest[1], &rest[2]);
         let t = std::time::Instant::now();
+        if breadbin_core::bmx::quick_status(host, "").is_some() {
+            let png = breadbin_core::bmx::Bmx::new(host, "")
+                .screenshot_png(rest.get(3).map(String::as_str) != Some("voll"))?;
+            std::fs::write(out, &png)?;
+            println!(
+                "{out}: von BMX in {:.1} s, {} Byte PNG",
+                t.elapsed().as_secs_f64(),
+                png.len()
+            );
+            return Ok(());
+        }
         let frame =
             breadbin_core::screenshot::capture(host, "", std::time::Duration::from_secs(6))?;
         let png = breadbin_core::screenshot::to_png(
@@ -229,6 +250,8 @@ fn main() -> Result<()> {
             upload_dir: dir.clone(),
             wifi_mac: String::new(),
             kind: device_kind(host),
+            unique_id: String::new(),
+            mac: String::new(),
         };
         let r = launch::copy_to_device(&conn, &rest[3..], &dev, "", &|_| String::new(), dir)?;
         println!("{r:#?}");
@@ -245,6 +268,8 @@ fn main() -> Result<()> {
             upload_dir: dir.clone(),
             wifi_mac: String::new(),
             kind: device_kind(host),
+            unique_id: String::new(),
+            mac: String::new(),
         };
         for f in launch::fetch_saves(&conn, &dev, "", Path::new(target), None)? {
             println!("geholt: {f}");
@@ -346,6 +371,8 @@ fn main() -> Result<()> {
             upload_dir: dir.clone(),
             wifi_mac: String::new(),
             kind: device_kind(host),
+            unique_id: String::new(),
+            mac: String::new(),
         };
         println!("{} „{label}“ …", if insert { "Lege ein" } else { "Starte" });
         let r = launch::launch(&conn, &sha1, &dev, "", &|_| String::new(), insert)?;
@@ -510,10 +537,12 @@ fn ftp_target(arg: &str) -> Option<(&str, &str)> {
     ftp::split_location(arg)
 }
 
-/// Geräteart eines Hosts: TeensyROM bzw. BMC64, wenn er sich so meldet, sonst Ultimate.
+/// Geräteart eines Hosts: TeensyROM, BMX bzw. BMC64, wenn er sich so meldet, sonst Ultimate.
 fn device_kind(host: &str) -> String {
     if breadbin_core::teensyrom::quick_status(host).is_some() {
         breadbin_core::remote::TEENSYROM.into()
+    } else if breadbin_core::bmx::quick_status(host, "").is_some() {
+        breadbin_core::remote::BMX.into()
     } else if breadbin_core::bmc64::quick_status(host, "").is_some() {
         breadbin_core::remote::BMC64.into()
     } else {

@@ -3,7 +3,7 @@
   <a href="#h-sources">Sources and scanning</a>
   <a href="#h-list">The list</a>
   <a href="#h-details">Details</a>
-  <a href="#h-devices">Devices (Ultimate, BMC64, TeensyROM)</a>
+  <a href="#h-devices">Devices (Ultimate, BMC64, BMX, TeensyROM)</a>
   <a href="#h-launch">Launch and insert</a>
   <a href="#h-emu">Emulator</a>
   <a href="#h-scraper">Descriptions</a>
@@ -55,7 +55,7 @@ Ultimate 64, a C64 Ultimate or a 1541 Ultimate II+ – or in an emulator such as
 <ul>
   <li><b>Search</b> by title, disk name, file names in the disk directory, genre or publisher. Spaces don't
     matter: “spacegun” finds “Space Gun”.</li>
-  <li><b>Filters</b>: format, view (all, ★ favorites, recently launched), source, “with description”,
+  <li><b>Filters</b>: format, view (all, ★ favorites, recently launched, most launched), source, “with description”,
     “duplicates”. Click column headers to sort, click again to reverse.</li>
   <li><b>“Group same games”</b>: D64, cartridge, cracks and work-in-progress builds of one game share a
     row (×N = number of versions). Matching uses the ScreenScraper game number and the cleaned-up name –
@@ -77,7 +77,7 @@ Ultimate 64, a C64 Ultimate or a 1541 Ultimate II+ – or in an emulator such as
 enlarge it. <b>“Search the web”</b> opens CSDb, GameBase64, Lemon64 and the C64-Wiki (and the
 ScreenScraper page) in your browser.</p>
 
-<h3 id="h-devices">Devices (Ultimate, BMC64, TeensyROM)</h3>
+<h3 id="h-devices">Devices (Ultimate, BMC64, BMX, TeensyROM)</h3>
 <ul>
   <li>Supported: Ultimate 64 (Elite, Elite II), C64 Ultimate and the 1541 Ultimate II, II+ and II+L cartridges (untested; the II
     without plus needs a USB network adapter). With the cartridge, screenshots, automatic title pictures and powering off are
@@ -90,6 +90,16 @@ ScreenScraper page) in your browser.</p>
     under “Edit”. Needs BMC64 5.5.1 or later (5.5.0 often aborts larger uploads). Not possible: swapping disks without a
     restart, screenshots, switching on and off from the app. An inserted cartridge stays in for the next launch – remove
     it in the BMC64 menu. BMC64 only starts what the machine it is currently running can handle (C64, C128, VIC-20 …).</li>
+  <li><b>BMX</b> (Bare Metal X: bare-metal VICE on the Raspberry Pi 4, 400, 5 and 500) – tested by the BMX
+    developer. Turn on the <b>“Remote API”</b> in the BMX menu; if you set a password there, enter it
+    in the password field under “Edit”. “Search network” finds BMX (also via UDP broadcast). BMX only allows files in the
+    folders <code>disks</code>, <code>tapes</code>, <code>carts</code> and <code>snapshots</code> of a drive, so the launch
+    folder is <code>/USER/disks/Breadbin</code> (if the card has no USER partition: <code>/SYS/disks/Breadbin</code>); Breadbin puts cartridges next to it into
+    <code>/USER/carts/Breadbin</code> and tapes into <code>/USER/tapes/Breadbin</code>. Games start via autostart – PRG,
+    P00, T64, TAP, CRT and all disk images. “Insert” swaps the disk in drive 8 without a restart; “Screenshot” and the
+    automatic title picture work too, as do saved games and “Empty launch folder”. Before launching anything other than a
+    cartridge, Breadbin removes an inserted cartridge. Not possible: switching on and off from the app. Feedback from BMX
+    owners is welcome.</li>
   <li><b>TeensyROM</b> (cartridge with a Teensy 4.1) – <b>untested</b>: built from the maker's protocol description,
     without a real device. Turn on <b>“Enable TCP Listener”</b> on the TeensyROM and enter its address by hand (port 2112;
     “Search network” does not find it). Launch folder on the SD card (<code>/SD/Breadbin</code>) or the USB stick
@@ -102,7 +112,7 @@ ScreenScraper page) in your browser.</p>
     launch folder”</b> only deletes files Breadbin put there – disks with saved games stay.</li>
   <li><b>Saved games</b>: if a game saves to a disk Breadbin copied over, the file in the launch folder changes.
     <b>“Fetch saved game …”</b> in the details of a disk game (next to “Launch”) fetches the saved games of that game,
-    <b>⋯ → “Fetch saved games …”</b> in the device row all changed disks – to a folder of your choice, as
+    the <b>⤓</b> button in the device row (or <b>⋯ → “Fetch saved games …”</b>) all changed disks – to a folder of your choice, as
     “Title (saved game 1a2b3c4d).d64”. If that folder is a source, they appear as versions of their own after the
     scan. If the disk was already on the device (nothing copied), the game saves straight into that file.</li>
   <li><b>Copy to the device</b>: mark several rows (Cmd- or Ctrl-click, Shift-click), then “Copy to device …”.
@@ -113,7 +123,13 @@ ScreenScraper page) in your browser.</p>
     with it (for example firmware that is too old, or JiffyDOS as KERNAL – tapes do not load with it).</li>
   <li><b>⏻</b> powers the device on or off. Powering on works via Wake-on-WiFi if “Wake On Wi-Fi” is
     enabled on the device; a device that is off is woken up automatically before launching.</li>
+  <li><b>■</b> (Stop game) resets the C64 on the device without starting anything new. On the Ultimate and BMX this also
+    ends a running cartridge; on BMC64 it stays in, and TeensyROM returns to its menu.</li>
   <li>If the device has a network password, enter it under “Edit”; it is kept in the system keychain.</li>
+  <li><b>New IP address:</b> If the router gives a device a different address, Breadbin finds it again – an Ultimate by its
+    ID, other devices by their MAC address (Breadbin remembers both once the device has been reachable). Breadbin only
+    searches when you ask it to: “Search again” on the unreachable device, or “+ Device” → “Search network”. The new address is taken over together with the folders scanned on the device and the password. This works on the
+    same network, not over VPN; a TeensyROM is not found automatically.</li>
 </ul>
 
 <h3 id="h-launch">Launch and insert</h3>
@@ -124,21 +140,22 @@ ScreenScraper page) in your browser.</p>
     running game.</li>
   <li><b>Multi-disk games</b>: “Disks” lists every disk/side in order – “Launch” on disk 1, “Insert” on each.
     Detected from the name (“Side 2”, “Disk 1”, “s1”) or from the folder (SUMMER1A, SUMMER1B, SUMMER1C).</li>
-  <li><b>Tapes (TAP)</b> can't be started on the Ultimate: it has no remote command for that. On BMC64 and in an emulator they work (see below).</li>
+  <li><b>Tapes (TAP)</b> can't be started on the Ultimate: it has no remote command for that. On BMC64, BMX and in an emulator they work (see below).</li>
   <li><b>Games with a REU image</b> (Ultimate 64, C64 Ultimate, 1541 Ultimate): if a <code>.reu</code> file with the
     same name lies next to the game file (e.g. Myst 64REU), Breadbin copies it to the launch folder, switches on “RAM
     Expansion Unit” and “Command Interface”, sets a matching REU size and loads the file into the REU before the game
     starts (a few seconds, depending on size). Breadbin changes these settings only temporarily, not permanently; the
     earlier values come back with the next start without a REU image on the same device, or at the latest after
-    switching off and on. BMC64 and TeensyROM cannot do this.</li>
-  <li><b>“Screenshot”</b> (Ultimate 64 and C64 Ultimate): what the device is showing is saved as your own
+    switching off and on. BMC64, TeensyROM and BMX cannot do this.</li>
+  <li><b>“Screenshot”</b> (Ultimate 64, C64 Ultimate and BMX): what the device is showing is saved as your own
     title screen or in-game picture (320 × 200, without border) – for example for the community data.
     “In-game” takes the next free one of the four in-game slots (if all are full, slot 4 is replaced). The same button
     sits next to every picture slot in “Enter details yourself”.
     The Ultimate briefly sends its picture as a video stream; other receivers (such as a jukebox) lose it
     meanwhile. <b>Network cable required:</b> the Ultimate sends the video stream over Ethernet only; a device that is
     only on Wi-Fi delivers no picture. If no picture arrives despite the cable, a firewall may be blocking incoming UDP
-    packets.</li>
+    packets. BMX delivers its picture through the Remote API (Wi-Fi works too); Breadbin crops the border there using the
+    usual VICE dimensions (untested).</li>
   <li><b>Automatic title picture</b> (⚙ Settings, off by default): after “Launch” the app waits the set time
     (25 seconds by default) and takes a screenshot as your own title picture – only if the game has none yet. If you
     launch another game on the same device before that, the picture is taken for the new one. If it still shows a
@@ -165,6 +182,12 @@ ScreenScraper page) in your browser.</p>
     disk in VICE via the “Fliplist” menu (usually Alt+N; in the SDL version via the menu with F12). Other emulators
     only get the launched disk; the others are in the <code>emulator</code> subfolder and can be inserted from there
     via the emulator's drive menu.</li>
+  <li><b>Remote control of VICE:</b> with VICE, <b>“Insert”</b> in the details works too (swaps the disk in drive 8
+    without a restart), as does <b>“Screenshot”</b> (as title or in-game picture, without the border); the automatic
+    title picture from the settings applies to VICE as well. Both act on the VICE window most recently started from
+    Breadbin. For this Breadbin opens VICE's monitor on this computer only (127.0.0.1) and keeps the connection while
+    VICE runs – VICE 3.9 otherwise quits when the connection drops. On Windows VICE may therefore quit if you close
+    Breadbin before VICE.</li>
   <li><b>Other emulators:</b> “Command line” says how the program is called; <code>{file}</code> is the game file.
     The default <code>-autostart {file}</code> suits VICE; with Denise selected, Breadbin uses just <code>{file}</code>
     on its own (Denise starts files passed to it by itself). Denise options are e.g. <code>-sid-8580</code>,
@@ -219,6 +242,10 @@ ScreenScraper page) in your browser.</p>
     the previous one is filled). Your own details always come first; no fetch and
     no exchange file overwrites them. A picture saved as the wrong kind moves with “Use as in-game” or “Use as
     title screen”; if there is already one there, the two swap places.</li>
+  <li><b>Kind:</b> besides games you can enter demos, intros, music, diskmags, tools and graphics (field “Kind” in the
+    dialog). For these, the fields group, party and place replace genre and number of players; credits go under
+    “Developer”, e.g. “Code: …, graphics: …, music: …”. The list shows only games by default; the selector next to the
+    view switches to “All kinds” or a single kind. Cracktros are not included.</li>
   <li><b>Description in German and English:</b> the dialog has one field per language; one is enough. The app shows the
     text in the interface language, or the other one with a note if it is missing. Submitting sends both languages, so
     every Breadbin user reads the text in their language. Genres come from a fixed list and are translated as well.</li>
@@ -238,6 +265,8 @@ ScreenScraper page) in your browser.</p>
   <li>“Show” sets up the list accordingly; the views “Without details” and “Damaged / unknown” are also in the view
     selector at the top. The duplicate files can be saved as CSV with all their locations.</li>
   <li>Breadbin deletes nothing here – clean up in the Finder or Explorer, then scan again.</li>
+  <li><b>Collection → “Statistics …”</b> gives an overview of the collection: size, share with description, favorites,
+    ratings, launches, distribution by decade and the most common genres and publishers.</li>
 </ul>
 
 <h3 id="h-mine">Lists, rating and notes</h3>

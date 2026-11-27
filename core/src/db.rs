@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS proposals(
     response TEXT NOT NULL,
     sent_at  INTEGER NOT NULL
 );
--- Starts auf Ultimate-Geräten, für „Zuletzt gestartet“.
+-- Starts auf Geräten und im Emulator (device = Gerätename bzw. „Emulator“), für „Zuletzt gestartet“ und den Startzähler.
 CREATE TABLE IF NOT EXISTS launches(
     id     INTEGER PRIMARY KEY,
     sha1   TEXT NOT NULL,
@@ -131,7 +131,9 @@ CREATE TABLE IF NOT EXISTS devices(
     product    TEXT NOT NULL,
     upload_dir TEXT NOT NULL,        -- Ordner für Dateien, die zum Starten hinkopiert werden
     wifi_mac   TEXT NOT NULL DEFAULT '', -- zum Einschalten per Wake-on-WiFi
-    kind       TEXT NOT NULL DEFAULT 'ultimate' -- Geräteart: ultimate | bmc64
+    kind       TEXT NOT NULL DEFAULT 'ultimate', -- Geräteart: ultimate | bmc64 | teensyrom | bmx
+    unique_id  TEXT NOT NULL DEFAULT '', -- Kennung des Ultimate (/v1/info), zum Wiederfinden nach Adresswechsel
+    mac        TEXT NOT NULL DEFAULT ''  -- MAC der zuletzt erreichten Adresse (ARP), ebenso
 );
 ";
 
@@ -153,13 +155,47 @@ pub fn open_in_memory() -> Result<Connection> {
     Ok(conn)
 }
 
+/// Version des Datenbankaufbaus (`PRAGMA user_version`). Neue Spalten und Tabellen baut [`migrate`]
+/// in ältere Datenbanken ein, ohne die Version zu ändern. Sie steigt nur, wenn eine ältere Fassung
+/// von Breadbin die Datenbank nicht mehr richtig lesen oder beim Schreiben beschädigen würde (Spalte
+/// umgedeutet, Tabelle ersetzt); solche Datenbanken öffnet eine ältere Fassung dann nicht mehr.
+/// Beschreibung: `docs/Datenbank.md`.
+pub const SCHEMA_VERSION: i64 = 1;
+
+/// Arten von Einträgen (Feld `kind` im Austauschformat). Gespeichert wird `NULL` für Spiele.
+pub const KINDS: [&str; 7] = [
+    "game", "demo", "intro", "music", "diskmag", "tool", "graphics",
+];
+
+/// Art zum Speichern: leer oder „game“ → `None`, sonst klein geschrieben (höchstens 20 Zeichen a–z).
+pub fn normalize_kind(kind: &str) -> Option<String> {
+    let k = kind.trim().to_ascii_lowercase();
+    (!k.is_empty() && k != "game" && k.len() <= 20 && k.bytes().all(|b| b.is_ascii_lowercase()))
+        .then_some(k)
+}
+
+/// Datenbankaufbau-Version einer offenen Datenbank (0 = vor der Einführung, Stand bis 0.9.4).
+pub fn schema_version(conn: &Connection) -> Result<i64> {
+    Ok(conn.query_row("PRAGMA user_version", [], |r| r.get(0))?)
+}
+
 fn init(conn: &Connection) -> Result<()> {
     // busy_timeout: Scan, Abruf und Oberfläche schreiben über eigene Verbindungen.
     conn.execute_batch(
         "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000;",
     )?;
+    let found = schema_version(conn)?;
+    if found > SCHEMA_VERSION {
+        bail!(tr!(
+            "Die Bibliothek stammt aus einer neueren Fassung von Breadbin (Datenbank-Version {found}). Bitte Breadbin aktualisieren.",
+            "The library comes from a newer version of Breadbin (database version {found}). Please update Breadbin."
+        ));
+    }
     conn.execute_batch(SCHEMA)?;
     migrate(conn)?;
+    if found < SCHEMA_VERSION {
+        conn.execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION}"))?;
+    }
     Ok(())
 }
 
@@ -176,12 +212,30 @@ fn migrate(conn: &Connection) -> Result<()> {
     if !has_column("devices", "kind")? {
         conn.execute_batch("ALTER TABLE devices ADD COLUMN kind TEXT NOT NULL DEFAULT 'ultimate'")?;
     }
+    if !has_column("devices", "unique_id")? {
+        conn.execute_batch("ALTER TABLE devices ADD COLUMN unique_id TEXT NOT NULL DEFAULT ''")?;
+    }
+    if !has_column("devices", "mac")? {
+        conn.execute_batch("ALTER TABLE devices ADD COLUMN mac TEXT NOT NULL DEFAULT ''")?;
+    }
     if !has_column("sources", "quick")? {
         conn.execute_batch("ALTER TABLE sources ADD COLUMN quick INTEGER NOT NULL DEFAULT 0")?;
     }
     // Englische Beschreibung zu eigenen und Gemeinschaftsangaben (`synopsis` = deutsch bzw. bisheriger Text).
+    if !has_column("metadata", "history")? {
+        conn.execute_batch("ALTER TABLE metadata ADD COLUMN history TEXT")?;
+    }
     if !has_column("metadata", "synopsis_en")? {
         conn.execute_batch("ALTER TABLE metadata ADD COLUMN synopsis_en TEXT")?;
+    }
+    // Art des Eintrags (NULL = Spiel) und Angaben für Demos, Intros usw.: Gruppe, Party, Platzierung.
+    if !has_column("metadata", "kind")? {
+        conn.execute_batch(
+            "ALTER TABLE metadata ADD COLUMN kind TEXT;
+             ALTER TABLE metadata ADD COLUMN grp TEXT;
+             ALTER TABLE metadata ADD COLUMN party TEXT;
+             ALTER TABLE metadata ADD COLUMN place INTEGER;",
+        )?;
     }
     if !has_column("files", "quick")? {
         conn.execute_batch("ALTER TABLE files ADD COLUMN quick INTEGER NOT NULL DEFAULT 0")?;
@@ -382,6 +436,10 @@ pub struct GameRow {
     pub favorite: bool,
     /// Zeitpunkt des letzten Starts (Unix-Sekunden).
     pub last_launched: Option<i64>,
+    /// Zahl der Starts (Geräte und Emulator; beim Zusammenfassen über alle Fassungen).
+    pub launch_count: i64,
+    /// Art des Eintrags (`demo`, `intro` …); `None` = Spiel.
+    pub kind: Option<String>,
     /// Spielnummer bei ScreenScraper, wenn bekannt.
     pub game_id: Option<String>,
     /// Beim Zusammenfassen: alle Inhalte dieses Spiels, dieser zuerst; sonst nur dieser.
@@ -418,7 +476,9 @@ const ROW_SELECT: &str =
                 MIN(f.title),
                 MIN(f.folder),
                 (SELECT n.rating FROM notes n WHERE n.sha1 = c.sha1),
-                (SELECT n.done FROM notes n WHERE n.sha1 = c.sha1)
+                (SELECT n.done FROM notes n WHERE n.sha1 = c.sha1),
+                (SELECT COUNT(*) FROM launches l WHERE l.sha1 = c.sha1),
+                CASE WHEN m.status = 'ok' THEN m.kind END
          FROM files f JOIN contents c ON c.sha1 = f.sha1 LEFT JOIN metadata m ON m.sha1 = c.sha1";
 
 fn game_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
@@ -449,6 +509,8 @@ fn game_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
         meta_status: r.get(10)?,
         favorite: r.get(11)?,
         last_launched: r.get(12)?,
+        launch_count: r.get(19)?,
+        kind: r.get(20)?,
         game_id: r.get(13)?,
         ungrouped: r.get(14)?,
         disk,
@@ -477,6 +539,8 @@ pub struct Search {
     pub only_favorites: bool,
     /// Nur schon gestartete, der zuletzt gestartete zuerst (ersetzt die Sortierung).
     pub recent: bool,
+    /// Nur schon gestartete, der am häufigsten gestartete zuerst (ersetzt die Sortierung).
+    pub most_launched: bool,
     /// Nur selbst geschriebene Angaben (die geteilt werden können).
     pub shareable: bool,
     /// Nur Einträge dieser eigenen Liste.
@@ -485,6 +549,8 @@ pub struct Search {
     pub only_damaged: bool,
     /// Nur Einträge ohne Angaben (nicht erkannt oder noch nicht nachgeschlagen).
     pub without_meta: bool,
+    /// Art: leer = alle, `game` = Spiele (auch Einträge ohne Angaben), sonst genau diese Art.
+    pub kind: String,
     /// Spalte: title, year, publisher, genre, format, locations (sonst title).
     pub sort: String,
     pub desc: bool,
@@ -532,7 +598,12 @@ pub fn search_with(conn: &Connection, s: &Search) -> Result<Vec<GameRow>> {
         "locations" => "COUNT(*)",
         _ => "COALESCE(m.title, MIN(f.title))",
     };
-    let (sort, dir) = if s.recent {
+    let (sort, dir) = if s.most_launched {
+        (
+            "-(SELECT COUNT(*) FROM launches l WHERE l.sha1 = c.sha1)",
+            "ASC",
+        )
+    } else if s.recent {
         (
             "-(SELECT MAX(l.at) FROM launches l WHERE l.sha1 = c.sha1)",
             "ASC",
@@ -543,10 +614,13 @@ pub fn search_with(conn: &Connection, s: &Search) -> Result<Vec<GameRow>> {
     let mut st = conn.prepare(&format!(
         "{ROW_SELECT}
          WHERE (?1 = '%%' OR f.title LIKE ?1 ESCAPE '\\' OR c.image_name LIKE ?1 ESCAPE '\\'
-                OR f.path LIKE ?1 ESCAPE '\\' OR m.title LIKE ?1 ESCAPE '\\'
-                OR replace(f.title, ' ', '') LIKE ?9 ESCAPE '\\' OR replace(m.title, ' ', '') LIKE ?9 ESCAPE '\\'
-                OR m.genres LIKE ?1 ESCAPE '\\' OR m.publisher LIKE ?1 ESCAPE '\\'
-                OR EXISTS(SELECT 1 FROM entries e WHERE e.sha1 = c.sha1 AND e.name LIKE ?1 ESCAPE '\\'))
+                OR f.path LIKE ?1 ESCAPE '\\' OR replace(f.title, ' ', '') LIKE ?9 ESCAPE '\\'
+                -- Angaben und Verzeichnisse als einmal berechnete Mengen statt je Datei (bei ~90 000 Dateien
+                -- ein Vielfaches schneller als die frühere Unterabfrage je Zeile).
+                OR c.sha1 IN (SELECT mt.sha1 FROM metadata mt WHERE mt.title LIKE ?1 ESCAPE '\\'
+                              OR replace(mt.title, ' ', '') LIKE ?9 ESCAPE '\\'
+                              OR mt.genres LIKE ?1 ESCAPE '\\' OR mt.publisher LIKE ?1 ESCAPE '\\')
+                OR c.sha1 IN (SELECT e.sha1 FROM entries e WHERE e.name LIKE ?1 ESCAPE '\\'))
            AND (?2 IS NULL OR c.format = ?2)
            AND (?3 IS NULL OR EXISTS(SELECT 1 FROM files f3 WHERE f3.sha1 = c.sha1 AND f3.source_id = ?3))
            AND (?4 = 0 OR m.status = 'ok')
@@ -556,6 +630,8 @@ pub fn search_with(conn: &Connection, s: &Search) -> Result<Vec<GameRow>> {
            AND (?11 IS NULL OR EXISTS(SELECT 1 FROM list_items li WHERE li.sha1 = c.sha1 AND li.list_id = ?11))
            AND (?12 = 0 OR c.detail LIKE '%beschädigt%')
            AND (?13 = 0 OR m.status IS NULL OR m.status <> 'ok')
+           AND (?14 = '' OR (?14 = 'game' AND (m.kind IS NULL OR COALESCE(m.status, '') <> 'ok'))
+                OR (m.status = 'ok' AND m.kind = ?14))
          GROUP BY c.sha1
          HAVING (?5 = 0 OR COUNT(*) > 1)
          ORDER BY ({sort} IS NULL OR {sort} = ''), {sort} COLLATE NOCASE {dir}, 2 COLLATE NOCASE, c.format
@@ -573,12 +649,13 @@ pub fn search_with(conn: &Connection, s: &Search) -> Result<Vec<GameRow>> {
             s.only_duplicates as i64,
             sql_limit,
             s.only_favorites as i64,
-            s.recent as i64,
+            (s.recent || s.most_launched) as i64,
             squeezed,
             s.shareable as i64,
             s.list_id,
             s.only_damaged as i64,
-            s.without_meta as i64
+            s.without_meta as i64,
+            s.kind
         ],
         game_row,
     )?;
@@ -595,6 +672,8 @@ pub fn search_with(conn: &Connection, s: &Search) -> Result<Vec<GameRow>> {
         || s.only_duplicates
         || s.only_favorites
         || s.recent
+        || s.most_launched
+        || (!s.kind.is_empty() && s.kind != "game")
         || s.shareable
         || s.list_id.is_some()
         || s.only_damaged;
@@ -612,6 +691,10 @@ pub fn search_with(conn: &Connection, s: &Search) -> Result<Vec<GameRow>> {
     let mut groups = group_rows(rows);
     if let Some(hits) = &hits {
         groups.retain(|g| g.variants.iter().any(|v| hits.contains(v)));
+    }
+    if s.most_launched {
+        // Starts aller Fassungen zählen zusammen; stabil, damit Gleichstände in der SQL-Reihenfolge bleiben.
+        groups.sort_by_key(|g| std::cmp::Reverse(g.launch_count));
     }
     groups.truncate(limit.try_into().unwrap_or(usize::MAX));
     Ok(groups)
@@ -882,6 +965,7 @@ fn group_rows(rows: Vec<GameRow>) -> Vec<GameRow> {
             let rating = v.iter().map(|r| r.rating).max().unwrap_or(0);
             let done = v.iter().any(|r| r.done);
             let last_launched = v.iter().filter_map(|r| r.last_launched).max();
+            let launch_count = v.iter().map(|r| r.launch_count).sum();
             let mut head = v.swap_remove(0);
             head.variants = variants;
             head.formats = formats.join(", ");
@@ -890,6 +974,7 @@ fn group_rows(rows: Vec<GameRow>) -> Vec<GameRow> {
             head.rating = rating;
             head.done = done;
             head.last_launched = last_launched;
+            head.launch_count = launch_count;
             head.disks = disks;
             // Name ohne „- Side 1“, die Seiten stehen in den Details.
             if disks > 0 && head.meta_status.as_deref() != Some("ok") {
@@ -950,9 +1035,12 @@ pub fn export_csv(conn: &Connection, search: &Search) -> Result<(String, usize)>
     let places: std::collections::HashMap<String, String> = st
         .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect::<Result<_, _>>()?;
-    let mut out = String::from(
-        "\u{feff}Titel;Jahr;Herausgeber;Genre;Format;Name im Abbild;Technik;Orte;Speicherorte;SHA-1\r\n",
-    );
+    let english = crate::i18n::is_english();
+    let mut out = String::from(if english {
+        "\u{feff}Title;Year;Publisher;Genre;Format;Name in image;Technical;Places;Locations;SHA-1\r\n"
+    } else {
+        "\u{feff}Titel;Jahr;Herausgeber;Genre;Format;Name im Abbild;Technik;Orte;Speicherorte;SHA-1\r\n"
+    });
     for r in &rows {
         let fields = [
             r.title.clone(),
@@ -961,7 +1049,11 @@ pub fn export_csv(conn: &Connection, search: &Search) -> Result<(String, usize)>
             r.genres.clone().unwrap_or_default(),
             r.format.clone(),
             r.image_name.clone().unwrap_or_default(),
-            r.detail.clone().unwrap_or_default(),
+            match &r.detail {
+                Some(d) if english => crate::formats::detail_en(d),
+                Some(d) => d.clone(),
+                None => String::new(),
+            },
             r.locations.to_string(),
             places.get(&r.sha1).cloned().unwrap_or_default(),
             r.sha1.clone(),
@@ -1002,6 +1094,25 @@ pub struct Details {
     pub media: Vec<(String, String)>,
 }
 
+/// Herkunft eines Gemeinschaftseintrags (Feld `history` im Austauschformat; trägt der Breadbin-Server beim
+/// Übernehmen ein): wann und von wem aufgenommen bzw. geändert.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct HistoryEntry {
+    /// JJJJ-MM-TT
+    pub date: String,
+    /// Einsender (selbst gewählter Name, „anonym“ ohne Angabe, „Breadbin“ für Einträge des Betreibers).
+    pub by: String,
+    /// `added` oder `changed`
+    pub action: String,
+    /// Nummer des Beitrags auf dem Annahme-Server, falls bekannt.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contribution: Option<u32>,
+    /// Auf der Prüfseite bearbeitet von (immer „Breadbin“).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub edited_by: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Meta {
     pub provider: String,
@@ -1015,6 +1126,13 @@ pub struct Meta {
     pub players: Option<String>,
     pub rating: Option<f64>,
     pub fetched_at: i64,
+    /// Art (`None` = Spiel), bei Demos usw. Gruppe, Party und Platzierung.
+    pub kind: Option<String>,
+    pub group: Option<String>,
+    pub party: Option<String>,
+    pub place: Option<i64>,
+    /// Herkunft (nur Gemeinschaftsangaben), älteste zuerst.
+    pub history: Vec<HistoryEntry>,
 }
 
 pub fn details(conn: &Connection, sha1: &str) -> Result<Details> {
@@ -1030,7 +1148,8 @@ pub fn details(conn: &Connection, sha1: &str) -> Result<Details> {
     )?;
     let meta = conn
         .query_row(
-            "SELECT provider, status, game_id, title, synopsis, developer, players, rating, fetched_at, synopsis_en
+            "SELECT provider, status, game_id, title, synopsis, developer, players, rating, fetched_at, synopsis_en,
+                    history, kind, grp, party, place
              FROM metadata WHERE sha1 = ?",
             [sha1],
             |r| {
@@ -1045,6 +1164,14 @@ pub fn details(conn: &Connection, sha1: &str) -> Result<Details> {
                     players: r.get(6)?,
                     rating: r.get(7)?,
                     fetched_at: r.get(8)?,
+                    kind: r.get(11)?,
+                    group: r.get(12)?,
+                    party: r.get(13)?,
+                    place: r.get(14)?,
+                    history: r
+                        .get::<_, Option<String>>(10)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default(),
                 })
             },
         )
@@ -1127,6 +1254,115 @@ pub fn stats(conn: &Connection) -> Result<Stats> {
         with_meta,
         not_found,
     })
+}
+
+/// Ausführliche Statistik der eigenen Sammlung (Dialog „Statistik“). Gezählt werden verschiedene
+/// Inhalte, nicht Dateien; Jahr und Herausgeber wie in der Liste (Angaben vor Dateiname).
+#[derive(Debug, Clone, Default, Serialize, PartialEq)]
+pub struct CollectionStats {
+    pub files: i64,
+    pub contents: i64,
+    /// Größe aller verschiedenen Inhalte in Bytes.
+    pub bytes: i64,
+    pub sources: i64,
+    /// Inhalte mit Beschreibung, davon selbst geschrieben.
+    pub with_meta: i64,
+    pub own: i64,
+    pub favorites: i64,
+    pub rated: i64,
+    pub done: i64,
+    /// Starts insgesamt und verschiedene gestartete Inhalte.
+    pub launches: i64,
+    pub launched: i64,
+    /// Jahrzehnt („1980“) → Inhalte; ohne Jahr fehlen sie hier und stehen in `without_year`.
+    pub by_decade: Vec<(String, i64)>,
+    pub without_year: i64,
+    /// Häufigste Genres und Herausgeber (höchstens 12).
+    pub top_genres: Vec<(String, i64)>,
+    pub top_publishers: Vec<(String, i64)>,
+}
+
+pub fn collection_stats(conn: &Connection) -> Result<CollectionStats> {
+    let one = |sql: &str| -> Result<i64> { Ok(conn.query_row(sql, [], |r| r.get(0))?) };
+    let mut s = CollectionStats {
+        files: one("SELECT COUNT(*) FROM files")?,
+        contents: one("SELECT COUNT(*) FROM contents")?,
+        bytes: one("SELECT COALESCE(SUM(size), 0) FROM contents")?,
+        sources: one("SELECT COUNT(*) FROM sources")?,
+        with_meta: one(
+            "SELECT COUNT(*) FROM metadata m JOIN contents c ON c.sha1 = m.sha1 WHERE m.status = 'ok'",
+        )?,
+        own: one(
+            "SELECT COUNT(*) FROM metadata m JOIN contents c ON c.sha1 = m.sha1
+                  WHERE m.status = 'ok' AND m.provider LIKE 'own%'",
+        )?,
+        favorites: one("SELECT COUNT(*) FROM favorites fv JOIN contents c ON c.sha1 = fv.sha1")?,
+        rated: one(
+            "SELECT COUNT(*) FROM notes n JOIN contents c ON c.sha1 = n.sha1 WHERE n.rating > 0",
+        )?,
+        done: one(
+            "SELECT COUNT(*) FROM notes n JOIN contents c ON c.sha1 = n.sha1 WHERE n.done <> 0",
+        )?,
+        launches: one("SELECT COUNT(*) FROM launches")?,
+        launched: one("SELECT COUNT(DISTINCT sha1) FROM launches")?,
+        ..Default::default()
+    };
+    // Jahr und Herausgeber je Inhalt wie in der Liste: Angaben, sonst aus dem Dateinamen.
+    let mut st = conn.prepare(
+        "SELECT COALESCE(m.year, (SELECT MIN(f.year) FROM files f WHERE f.sha1 = c.sha1)),
+                COALESCE(m.publisher, (SELECT MIN(f.publisher) FROM files f WHERE f.sha1 = c.sha1)),
+                CASE WHEN m.status = 'ok' THEN m.genres END
+         FROM contents c LEFT JOIN metadata m ON m.sha1 = c.sha1",
+    )?;
+    let mut decades: std::collections::BTreeMap<String, i64> = Default::default();
+    use std::collections::HashMap;
+    let mut genres: HashMap<String, i64> = HashMap::new();
+    let mut publishers: HashMap<String, i64> = HashMap::new();
+    let rows = st.query_map([], |r| {
+        Ok((
+            r.get::<_, Option<String>>(0)?,
+            r.get::<_, Option<String>>(1)?,
+            r.get::<_, Option<String>>(2)?,
+        ))
+    })?;
+    for row in rows {
+        let (year, publisher, genre) = row?;
+        let decade = year
+            .as_deref()
+            .and_then(|y| y.get(..4))
+            .and_then(|y| y.parse::<u32>().ok())
+            .filter(|y| (1970..2100).contains(y))
+            .map(|y| (y / 10 * 10).to_string());
+        match decade {
+            Some(d) => *decades.entry(d).or_default() += 1,
+            None => s.without_year += 1,
+        }
+        if let Some(p) = publisher
+            .map(|p| p.trim().to_string())
+            .filter(|p| !p.is_empty())
+        {
+            *publishers.entry(p).or_default() += 1;
+        }
+        for g in genre.as_deref().unwrap_or("").split(", ") {
+            let g = g.trim();
+            if !g.is_empty() {
+                *genres.entry(g.to_string()).or_default() += 1;
+            }
+        }
+    }
+    let top = |m: HashMap<String, i64>| -> Vec<(String, i64)> {
+        let mut v: Vec<(String, i64)> = m.into_iter().collect();
+        v.sort_by(|a, b| {
+            b.1.cmp(&a.1)
+                .then_with(|| a.0.to_lowercase().cmp(&b.0.to_lowercase()))
+        });
+        v.truncate(12);
+        v
+    };
+    s.by_decade = decades.into_iter().collect();
+    s.top_genres = top(genres);
+    s.top_publishers = top(publishers);
+    Ok(s)
 }
 
 // ---------------------------------------------------------------- Aufräumen
@@ -1776,6 +2012,106 @@ mod tests {
     }
 
     #[test]
+    fn filter_nach_art() {
+        let conn = open_in_memory().unwrap();
+        conn.execute(
+            "INSERT INTO sources(id, kind, label, location) VALUES(1, 'local', 'A', '/a')",
+            [],
+        )
+        .unwrap();
+        file(&conn, 1, "a.prg", "s1", "Alpha", None);
+        file(&conn, 1, "b.prg", "s2", "Beta", None);
+        file(&conn, 1, "c.prg", "s3", "Gamma", None);
+        conn.execute(
+            "INSERT INTO metadata(sha1, provider, status, title, kind, fetched_at) VALUES
+             ('s1', 'own', 'ok', 'Alpha', NULL, 0), ('s2', 'own', 'ok', 'Beta', 'demo', 0)",
+            [],
+        )
+        .unwrap();
+        let titles = |kind: &str| {
+            search_with(
+                &conn,
+                &Search {
+                    kind: kind.into(),
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .into_iter()
+            .map(|r| r.title)
+            .collect::<Vec<_>>()
+        };
+        assert_eq!(titles(""), ["Alpha", "Beta", "Gamma"]);
+        assert_eq!(
+            titles("game"),
+            ["Alpha", "Gamma"],
+            "ohne Angaben zählt als Spiel"
+        );
+        assert_eq!(titles("demo"), ["Beta"]);
+        assert_eq!(normalize_kind(" Game "), None);
+        assert_eq!(normalize_kind("Intro").as_deref(), Some("intro"));
+    }
+
+    #[test]
+    fn datenbank_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("t.sqlite");
+        let conn = open(&path).unwrap();
+        assert_eq!(schema_version(&conn).unwrap(), SCHEMA_VERSION);
+        // Datenbank einer künftigen Fassung: nicht öffnen statt kaputtschreiben.
+        conn.execute_batch(&format!("PRAGMA user_version = {}", SCHEMA_VERSION + 1))
+            .unwrap();
+        drop(conn);
+        let e = open(&path).unwrap_err().to_string();
+        assert!(e.contains("neueren Fassung"), "{e}");
+    }
+
+    #[test]
+    fn sammlungsstatistik() {
+        let conn = open_in_memory().unwrap();
+        conn.execute(
+            "INSERT INTO sources(id, kind, label, location) VALUES(1, 'local', 'A', '/a')",
+            [],
+        )
+        .unwrap();
+        file(&conn, 1, "x.d64", "s1", "Alpha", None);
+        file(&conn, 1, "y.prg", "s2", "Beta", None);
+        file(&conn, 1, "z.crt", "s3", "Gamma", None);
+        conn.execute("UPDATE contents SET size = 10", []).unwrap();
+        conn.execute(
+            "UPDATE files SET year = '1984', publisher = 'Datei' WHERE sha1 = 's3'",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO metadata(sha1, provider, status, year, publisher, genres, fetched_at) VALUES
+             ('s1', 'own', 'ok', '1987', 'Rainbow Arts', 'Plattform / Jump ''n'' Run, Action', 0),
+             ('s2', 'screenscraper', 'ok', '1991-05-01', 'Rainbow Arts', 'Action', 0)",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO launches(sha1, device, at) VALUES('s1', 'E2', 1), ('s1', 'Emulator', 2)",
+            [],
+        )
+        .unwrap();
+        conn.execute("INSERT INTO favorites(sha1, added) VALUES('s2', 0)", [])
+            .unwrap();
+        let s = collection_stats(&conn).unwrap();
+        assert_eq!((s.files, s.contents, s.bytes, s.sources), (3, 3, 30, 1));
+        assert_eq!((s.with_meta, s.own, s.favorites), (2, 1, 1));
+        assert_eq!((s.launches, s.launched), (2, 1));
+        assert_eq!(
+            s.by_decade,
+            [("1980".to_string(), 2), ("1990".to_string(), 1)]
+        );
+        assert_eq!(s.without_year, 0);
+        assert_eq!(s.top_genres[0], ("Action".to_string(), 2));
+        assert_eq!(s.top_publishers[0], ("Rainbow Arts".to_string(), 2));
+        assert_eq!(s.top_publishers[1], ("Datei".to_string(), 1));
+    }
+
+    #[test]
     fn aufraeum_uebersicht() {
         let conn = open_in_memory().unwrap();
         conn.execute("INSERT INTO sources(id, kind, label, location) VALUES(1, 'local', 'A', '/a'), (2, 'local', 'B', '/b')", [])
@@ -1933,7 +2269,17 @@ mod tests {
         );
         let rows = search_with(&conn, &Search::default()).unwrap();
         assert_eq!(rows[0].last_launched, Some(100));
+        assert_eq!(rows[0].launch_count, 2);
         assert_eq!(rows[1].last_launched, None);
+        assert_eq!(rows[1].launch_count, 0);
+        // Am häufigsten gestartet: Alpha (2) vor Gamma (1), Beta (nie) fehlt.
+        assert_eq!(
+            titles(Search {
+                most_launched: true,
+                ..Default::default()
+            }),
+            ["Alpha", "Gamma"]
+        );
 
         // Selbst geschrieben (teilbar): eigene Angaben, nicht die auf Grundlage von ScreenScraper bearbeiteten.
         conn.execute(

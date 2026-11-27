@@ -3,7 +3,7 @@
   <a href="#h-sources">Quellen und Scannen</a>
   <a href="#h-list">Die Liste</a>
   <a href="#h-details">Details</a>
-  <a href="#h-devices">Geräte (Ultimate, BMC64, TeensyROM)</a>
+  <a href="#h-devices">Geräte (Ultimate, BMC64, BMX, TeensyROM)</a>
   <a href="#h-launch">Starten und Einlegen</a>
   <a href="#h-emu">Emulator</a>
   <a href="#h-scraper">Beschreibungen</a>
@@ -56,7 +56,7 @@ einem Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+ – oder in e
 <ul>
   <li><b>Suche</b> nach Titel, Diskname, Dateinamen im Disk-Verzeichnis, Genre, Herausgeber. Leerzeichen
     zählen nicht: „spacegun“ findet „Space Gun“.</li>
-  <li><b>Filter</b>: Format, Ansicht (Alle, ★ Favoriten, Zuletzt gestartet), Quelle, „mit Beschreibung“,
+  <li><b>Filter</b>: Format, Ansicht (Alle, ★ Favoriten, Zuletzt gestartet, Am häufigsten gestartet), Quelle, „mit Beschreibung“,
     „mehrfach vorhanden“. Spaltenköpfe sortieren, ein zweiter Klick dreht die Richtung.</li>
   <li><b>„Gleiche Spiele zusammenfassen“</b>: D64, Modul, Cracks und Arbeitsstände eines Spiels stehen in
     einer Zeile (×N = Anzahl Fassungen). Erkannt über die ScreenScraper-Spielnummer und den bereinigten
@@ -78,7 +78,7 @@ einem Ultimate 64, einem C64 Ultimate oder einem 1541 Ultimate II+ – oder in e
 sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase64, Lemon64 und im C64-Wiki
 (und die Seite bei ScreenScraper) im Browser.</p>
 
-<h3 id="h-devices">Geräte (Ultimate, BMC64, TeensyROM)</h3>
+<h3 id="h-devices">Geräte (Ultimate, BMC64, BMX, TeensyROM)</h3>
 <ul>
   <li>Unterstützt: Ultimate 64 (Elite, Elite II), C64 Ultimate und das Steckmodul 1541 Ultimate II, II+ und II+L (dort ungetestet;
     der II ohne Plus braucht einen USB-Netzwerkadapter). Beim Steckmodul fallen Bildschirmfoto, automatisches Titelbild und
@@ -91,6 +91,16 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     in „Bearbeiten“ ins Passwortfeld. Ab BMC64 5.5.1 (5.5.0 bricht größere Uploads oft ab). Nicht möglich: Diskwechsel ohne
     Neustart, Bildschirmfotos, Ein- und Ausschalten aus der App. Ein eingelegtes Modul bleibt beim nächsten Start stecken
     – im BMC64-Menü entfernen. BMC64 startet nur, was die gerade laufende Maschine kann (C64, C128, VIC-20 …).</li>
+  <li><b>BMX</b> (Bare Metal X: VICE ohne Betriebssystem auf Raspberry Pi 4, 400, 5 und 500) – vom BMX-Entwickler
+    geprüft. Im BMX-Menü die <b>„Remote API“</b> einschalten; ein dort gesetztes Passwort
+    gehört in „Bearbeiten“ ins Passwortfeld. „Im Netz suchen“ findet BMX (auch per UDP-Broadcast). BMX erlaubt Dateien nur
+    in den Ordnern <code>disks</code>, <code>tapes</code>, <code>carts</code> und <code>snapshots</code> eines Laufwerks,
+    der Startordner ist deshalb <code>/USER/disks/Breadbin</code> (gibt es auf der Karte keine USER-Partition: <code>/SYS/disks/Breadbin</code>); Module legt Breadbin daneben nach
+    <code>/USER/carts/Breadbin</code>, Bänder nach <code>/USER/tapes/Breadbin</code>. Gestartet wird per Autostart – PRG,
+    P00, T64, TAP, CRT und alle Disk-Abbilder. „Einlegen“ wechselt die Diskette in Laufwerk 8 ohne Neustart,
+    „Bildschirmfoto“ und das automatische Titelbild gehen ebenfalls, dazu Spielstände und „Startordner leeren“. Vor dem
+    Start eines Nicht-Moduls zieht Breadbin ein steckendes Modul ab. Nicht möglich: Ein- und Ausschalten aus der App.
+    Rückmeldungen von BMX-Besitzern sind willkommen.</li>
   <li><b>TeensyROM</b> (Modul mit Teensy 4.1) – <b>ungetestet</b>: gebaut nach der Protokoll-Beschreibung des Herstellers,
     ohne echtes Gerät. Am TeensyROM <b>„Enable TCP Listener“</b> einschalten und die Adresse von Hand eintragen (Port 2112,
     „Im Netz suchen“ findet ihn nicht). Startordner auf der SD-Karte (<code>/SD/Breadbin</code>) oder dem USB-Stick
@@ -104,7 +114,7 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     bleiben liegen.</li>
   <li><b>Spielstände</b>: Speichert ein Spiel auf eine hinkopierte Diskette, ändert sich die Datei im Startordner.
     <b>„Spielstand holen …“</b> in den Details eines Diskettenspiels (neben „Starten“) holt die Spielstände dieses
-    Spiels, <b>⋯ → „Spielstände zurückholen …“</b> in der Gerätezeile alle geänderten Disketten – in einen Ordner deiner Wahl, als
+    Spiels, der Knopf <b>⤓</b> in der Gerätezeile (oder <b>⋯ → „Spielstände zurückholen …“</b>) alle geänderten Disketten – in einen Ordner deiner Wahl, als
     „Titel (Spielstand 1a2b3c4d).d64“. Ist der Ordner eine Quelle, erscheinen sie nach dem Scan als eigene Fassung.
     Lag die Diskette schon vorher auf dem Gerät (kein Hinkopieren), speichert das Spiel direkt in diese Datei.</li>
   <li><b>Auf das Gerät kopieren</b>: Mehrere Zeilen markieren (Cmd- bzw. Strg-Klick, Shift-Klick), dann
@@ -115,7 +125,13 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     (etwa zu alte Firmware oder JiffyDOS als KERNAL – damit laden keine Bänder).</li>
   <li><b>⏻</b> schaltet ein bzw. aus. Einschalten klappt per Wake-on-WiFi, wenn am Gerät „Wake On Wi-Fi“
     an ist; ein ausgeschaltetes Gerät wird vor einem Start automatisch geweckt.</li>
+  <li><b>■</b> (Spiel beenden) setzt den C64 auf dem Gerät zurück, ohne etwas Neues zu starten. Auf Ultimate und BMX
+    endet dabei auch ein laufendes Modul; bei BMC64 bleibt es stecken, TeensyROM kehrt in sein Menü zurück.</li>
   <li>Hat das Gerät ein Netzwerk-Passwort, gehört es in „Bearbeiten“; es liegt im Schlüsselbund.</li>
+  <li><b>Neue IP-Adresse:</b> Vergibt der Router einem Gerät eine andere Adresse, findet Breadbin es wieder – beim Ultimate
+    über seine Kennung, sonst über die MAC-Adresse (beides merkt sich Breadbin, sobald das Gerät einmal erreichbar war).
+    Gesucht wird nur, wenn du es auslöst: mit „Neu suchen“ am nicht erreichbaren Gerät oder über „+ Gerät“ → „Im Netz suchen“. Die neue Adresse wird samt der auf dem Gerät gescannten Ordner und dem Passwort übernommen. Das klappt im
+    selben Netz, nicht über VPN; den TeensyROM findet Breadbin nicht von selbst.</li>
 </ul>
 
 <h3 id="h-launch">Starten und Einlegen</h3>
@@ -127,21 +143,22 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
   <li><b>Diskettenreihen</b>: Unter „Disketten“ steht jede Disk/Seite in der richtigen Reihenfolge – bei
     Disk 1 „Starten“, bei jeder „Einlegen“. Erkannt über den Namen („Side 2“, „Disk 1“, „s1“) oder über
     den Ordner (SUMMER1A, SUMMER1B, SUMMER1C).</li>
-  <li><b>Bänder (TAP)</b> lassen sich auf dem Ultimate nicht starten: Er hat dafür keinen Fernsteuerbefehl. Auf BMC64 und im Emulator gehen sie (siehe unten).</li>
+  <li><b>Bänder (TAP)</b> lassen sich auf dem Ultimate nicht starten: Er hat dafür keinen Fernsteuerbefehl. Auf BMC64, BMX und im Emulator gehen sie (siehe unten).</li>
   <li><b>Spiele mit REU-Abbild</b> (Ultimate 64, C64 Ultimate, 1541 Ultimate): Liegt neben der Spieldatei eine
     <code>.reu</code>-Datei mit gleichem Namen (z. B. Myst 64REU), kopiert Breadbin sie in den Startordner, schaltet
     „RAM Expansion Unit“ und „Command Interface“ ein, stellt die REU-Größe passend ein und lädt die Datei ins REU, bevor
     das Spiel startet (je nach Größe einige Sekunden). Die Einstellungen ändert Breadbin nur vorübergehend, nicht dauerhaft;
     beim nächsten Start ohne REU-Abbild auf demselben Gerät kommen die vorherigen Werte zurück, spätestens nach dem
-    Aus- und Einschalten. BMC64 und TeensyROM können das nicht.</li>
-  <li><b>„Bildschirmfoto“</b> (Ultimate 64 und C64 Ultimate): Was das Gerät gerade zeigt, wird als eigenes
+    Aus- und Einschalten. BMC64, TeensyROM und BMX können das nicht.</li>
+  <li><b>„Bildschirmfoto“</b> (Ultimate 64, C64 Ultimate und BMX): Was das Gerät gerade zeigt, wird als eigenes
     Titelbild oder eigene Spielszene gespeichert (320 × 200, ohne Rahmen) – etwa für die
     Gemeinschaftsdaten. „Spielszene“ belegt den nächsten freien der vier Szenenplätze (sind alle voll, wird Szene 4
     ersetzt). Denselben Knopf gibt es im Dialog „Angaben selbst eintragen“ bei jedem Bildplatz.
     Der Ultimate schickt sein Bild dafür kurz als Videostrom; andere Empfänger (z. B. eine
     Jukebox) verlieren ihn dabei. <b>Nur mit Netzwerkkabel:</b> Den Videostrom schickt der Ultimate ausschließlich über
     Ethernet; ein Gerät, das nur per WLAN im Netz hängt, liefert kein Bild. Kommt trotz Kabel kein Bild an, blockiert
-    womöglich die Firewall eingehende UDP-Pakete.</li>
+    womöglich die Firewall eingehende UDP-Pakete. BMX liefert sein Bild über die Remote API (auch per WLAN); den Rahmen
+    schneidet Breadbin dort nach den üblichen VICE-Maßen ab (ungetestet).</li>
   <li><b>Titelbild automatisch</b> (⚙ Einstellungen, Standard aus): Nach „Starten“ wartet die App die eingestellte
     Zeit (Standard 25 Sekunden) und macht ein Bildschirmfoto als eigenes Titelbild – nur wenn das Spiel noch keines
     hat. Startest du vorher ein anderes Spiel auf demselben Gerät, gilt die Aufnahme für das neue. Zeigt das Bild
@@ -169,6 +186,12 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     (Fliplist). Die nächste Diskette legst du in VICE über das Menü „Fliplist“ ein (meist Alt+N; in der SDL-Fassung
     über das Menü mit F12). Andere Emulatoren bekommen nur die gestartete Diskette; die übrigen liegen im
     Unterordner <code>emulator</code> und lassen sich dort über das Laufwerksmenü einlegen.</li>
+  <li><b>VICE fernsteuern:</b> In VICE geht auch <b>„Einlegen“</b> in den Details (wechselt die Diskette in
+    Laufwerk 8, ohne Neustart) und <b>„Bildschirmfoto“</b> (als Titelbild oder Spielszene, ohne Rahmen); auch das
+    automatische Titelbild aus den Einstellungen gilt für VICE. Beides wirkt auf das zuletzt aus Breadbin gestartete
+    VICE-Fenster. Breadbin öffnet dafür den Monitor von VICE nur auf diesem Rechner (127.0.0.1) und hält die
+    Verbindung, solange VICE läuft – VICE 3.9 beendet sich sonst, wenn die Verbindung abreißt. Unter Windows kann VICE
+    sich deshalb beenden, wenn du Breadbin vor VICE schließt.</li>
   <li><b>Andere Emulatoren:</b> Unter „Aufruf“ steht, wie das Programm aufgerufen wird; <code>{file}</code> ist die
     Spieldatei. Für VICE passt die Vorgabe <code>-autostart {file}</code>; ist Denise eingestellt, nimmt Breadbin
     dafür von selbst nur <code>{file}</code> (Denise startet übergebene Dateien selbst). Optionen für Denise heißen
@@ -225,6 +248,10 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
     Szene erscheint, sobald die vorige belegt ist). Eigene Angaben gehen immer vor; kein Abruf
     und keine Austauschdatei überschreibt sie. Ein falsch eingeordnetes Bild verschiebst du mit „Als Spielszene“
     bzw. „Als Titelbild“; liegt dort schon eins, tauschen beide den Platz.</li>
+  <li><b>Art:</b> Neben Spielen lassen sich Demos, Intros, Musik, Diskmags, Werkzeuge und Grafiken eintragen (Feld „Art“
+    im Dialog). Bei diesen Arten gibt es statt Genre und Spielerzahl die Felder Gruppe, Party und Platz; Mitwirkende
+    stehen unter „Entwickler“, etwa „Code: …, Grafik: …, Musik: …“. Die Liste zeigt standardmäßig nur Spiele; die
+    Auswahl neben der Ansicht schaltet auf „Alle Arten“ oder eine bestimmte Art um. Cracktros werden nicht aufgenommen.</li>
   <li><b>Beschreibung auf Deutsch und Englisch:</b> Der Dialog hat ein Feld je Sprache; eine genügt. Die App zeigt den Text in
     der Sprache der Oberfläche, fehlt er, den anderen mit Hinweis. Beim Einsenden gehen beide Sprachen mit, so lesen alle
     Breadbin-Nutzer den Text in ihrer Sprache. Genres stammen aus einer festen Liste und erscheinen ebenfalls übersetzt.</li>
@@ -244,6 +271,8 @@ sich anklicken. <b>„Im Netz suchen“</b> öffnet die Suche bei CSDb, GameBase
   <li>„Zeigen“ stellt die Liste passend ein; die Ansichten „Ohne Angaben“ und „Beschädigt / unbekannt“ gibt es auch
     oben in der Ansichtsauswahl. Die doppelten Dateien lassen sich samt allen Orten als CSV speichern.</li>
   <li>Breadbin löscht dabei nichts – aufgeräumt wird im Finder bzw. Explorer, danach neu scannen.</li>
+  <li><b>Bestand → „Statistik …“</b> zeigt die Sammlung im Überblick: Größe, Anteil mit Beschreibung, Favoriten,
+    Bewertungen, Starts, Verteilung nach Jahrzehnten und die häufigsten Genres und Herausgeber.</li>
 </ul>
 
 <h3 id="h-mine">Listen, Bewertung und Notizen</h3>

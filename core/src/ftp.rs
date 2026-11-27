@@ -371,12 +371,13 @@ fn parse_list_line(line: &str) -> Option<RemoteEntry> {
 }
 
 /// Zerlegt `ftp://host/USB2/Spiele` (Ultimate), `bmc64://host/SD/Spiele` bzw.
-/// `teensyrom://host/SD/Spiele` in Host und Pfad.
+/// `teensyrom://host/SD/Spiele` bzw. `bmx://host/USER/disks/Spiele` in Host und Pfad.
 pub fn split_location(location: &str) -> Option<(&str, &str)> {
     let rest = location
         .strip_prefix("ftp://")
         .or_else(|| location.strip_prefix("bmc64://"))
-        .or_else(|| location.strip_prefix("teensyrom://"))?;
+        .or_else(|| location.strip_prefix("teensyrom://"))
+        .or_else(|| location.strip_prefix("bmx://"))?;
     let slash = rest.find('/')?;
     Some((&rest[..slash], &rest[slash..]))
 }

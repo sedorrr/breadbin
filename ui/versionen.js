@@ -2,6 +2,17 @@
 // Neue Fassung oben anfügen: { v, date, de: [...], en: [...] }.
 const VERSIONS = [
   {
+    v: "0.9.5", date: "2026-11-27",
+    de: ["BMX (Raspberry Pi 4/5/400) als Gerät", "Knopf „Spiel beenden“ an jedem Gerät",
+      "Geräte mit neuer IP-Adresse wiederfinden („Neu suchen“)", "VICE: Diskwechsel und Bildschirmfoto",
+      "Demos, Intros, Musik u. a. neben Spielen", "Suche erst mit Enter, schneller und ohne Hänger",
+      "Statistik, Startzähler, Herkunft der Gemeinschaftsdaten"],
+    en: ["BMX (Raspberry Pi 4/5/400) as a device", "“Stop game” button on every device",
+      "Find devices again after an IP change (“Search again”)", "VICE: disk swap and screenshots",
+      "Demos, intros, music and more besides games", "Search on Enter, faster and without freezes",
+      "Statistics, launch counter, origin of community data"],
+  },
+  {
     v: "0.9.4", date: "2026-11-23",
     de: ["BMC64 (Raspberry Pi) als Gerät", "TeensyROM als Gerät (ungetestet)", "Mehrere Emulatoren, auch Denise",
       "REU-Abbild beim Start mitladen", "Scan meldet neue und fehlende Dateien", "Liste ohne 1000er-Grenze",

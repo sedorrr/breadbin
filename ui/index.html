@@ -39,7 +39,7 @@
     <section class="side" data-key="devices">
       <div class="section-head">
         <button class="fold" aria-expanded="true"><span class="chev">▾</span><h2>Geräte</h2><span class="count" id="devices-count"></span></button>
-        <button id="btn-add-device" class="small icon" title="Ultimate 64, C64 Ultimate, 1541 Ultimate II+, BMC64 oder TeensyROM hinzufügen" aria-label="Gerät hinzufügen">＋</button>
+        <button id="btn-add-device" class="small icon" title="Ultimate 64, C64 Ultimate, 1541 Ultimate II+, BMC64, BMX oder TeensyROM hinzufügen" aria-label="Gerät hinzufügen">＋</button>
       </div>
       <div class="section-body"><ul id="devices" class="rows list"></ul></div>
     </section>
@@ -66,7 +66,10 @@
         <button class="fold" aria-expanded="false"><span class="chev">▾</span><h2>Bestand</h2><span class="count" id="stats-count"></span></button>
       </div>
       <div class="section-body"><div id="stats"></div>
-        <button id="btn-cleanup" class="small" title="Doppelte Dateien, beschädigte Abbilder und Einträge ohne Angaben im Überblick">Aufräumen …</button></div>
+        <div class="stats-buttons">
+          <button id="btn-statistics" class="small" title="Jahrzehnte, Genres, Herausgeber, Bewertungen und Starts der eigenen Sammlung">Statistik …</button>
+          <button id="btn-cleanup" class="small" title="Doppelte Dateien, beschädigte Abbilder und Einträge ohne Angaben im Überblick">Aufräumen …</button>
+        </div></div>
     </section>
   </aside>
   <div class="splitter" id="split-sidebar" title="Ziehen: Breite ändern · Doppelklick: zurücksetzen"></div>
@@ -82,6 +85,13 @@
         </select>
       </label>
       <p class="meta">Wird nach dem Speichern sofort übernommen.</p>
+      <label>Suche starten
+        <select id="search-mode">
+          <option value="type">beim Tippen</option>
+          <option value="enter">erst mit Enter</option>
+        </select>
+      </label>
+      <p class="meta">Bei sehr großen Sammlungen oder langsamen Rechnern sucht „erst mit Enter“ nicht nach jedem Buchstaben.</p>
       <label class="inline"><input type="checkbox" id="keep-awake">
         Rechner während Scan und Abruf nicht einschlafen lassen (Bildschirm darf aus)</label>
       <label>Bevorzugte Quelle für Angaben
@@ -183,9 +193,20 @@
         <option value="">Alle</option>
         <option value="fav">★ Favoriten</option>
         <option value="recent">Zuletzt gestartet</option>
+        <option value="most">Am häufigsten gestartet</option>
         <option value="shareable" title="Spiele mit selbst geschriebenen Angaben – sie kommen beim Teilen in die Austauschdatei">Selbst geschrieben (teilbar)</option>
         <option value="nometa" title="Einträge ohne Beschreibung: nicht erkannt oder noch nicht nachgeschlagen">Ohne Angaben</option>
         <option value="damaged" title="Abbilder, die beim Scan als beschädigt oder unbekannt aufgebaut erkannt wurden">Beschädigt / unbekannt</option>
+      </select>
+      <select id="kind-filter" title="Art: Spiele, Demos, Intros …">
+        <option value="game">Spiele</option>
+        <option value="">Alle Arten</option>
+        <option value="demo">Demos</option>
+        <option value="intro">Intros</option>
+        <option value="music">Musik</option>
+        <option value="diskmag">Diskmags</option>
+        <option value="tool">Werkzeuge</option>
+        <option value="graphics">Grafik</option>
       </select>
       <select id="source-filter" title="Nur Einträge aus dieser Quelle"><option value="">Alle Quellen</option></select>
       <label class="check"><input type="checkbox" id="only-meta"> mit Beschreibung</label>
@@ -223,11 +244,12 @@
       <p class="meta">Ultimate 64, C64 Ultimate oder 1541 Ultimate II+ im Netzwerk. Nötig sind FTP und die
         REST-Schnittstelle („Web Remote Control Service“, ab Firmware 3.11).</p>
       <p class="meta">Oder BMC64 auf einem Raspberry Pi: im BMC64-Menü Netzwerk und „Web UI“ einschalten (ab BMC64 5.5.1).</p>
+      <p class="meta">Oder BMX auf einem Raspberry Pi 4/5/400: im BMX-Menü „Remote API“ einschalten.</p>
       <p class="meta">Oder TeensyROM (ungetestet): am Gerät „Enable TCP Listener“ einschalten; Adresse von Hand eintragen.</p>
       <div class="dialog-buttons"><button type="button" id="dev-discover">Im Netz suchen</button></div>
       <ul id="dev-found" class="found"></ul>
       <label>Adresse (IP oder Name) <input id="dev-host" placeholder="192.168.1.64" autocomplete="off"></label>
-      <label>Netzwerk-Passwort bzw. BMC64-PIN (nur falls gesetzt)
+      <label>Netzwerk-Passwort, BMC64-PIN bzw. BMX-Passwort (nur falls gesetzt)
         <input id="dev-password" type="password" autocomplete="off"></label>
       <div class="dialog-buttons"><button type="button" id="dev-probe">Verbinden und prüfen</button></div>
       <p id="dev-result" class="meta"></p>
@@ -235,6 +257,7 @@
         <select id="dev-kind">
           <option value="ultimate">Ultimate</option>
           <option value="bmc64">BMC64</option>
+          <option value="bmx">BMX</option>
           <option value="teensyrom">TeensyROM (ungetestet)</option>
         </select></label>
       <label>Name <input id="dev-name" autocomplete="off"></label>
@@ -292,6 +315,18 @@
         <span class="spacer"></span>
         <button value="cancel" formnovalidate>Abbrechen</button>
         <button value="ok" class="primary">Kopieren</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="statistics-dialog" class="form-dialog">
+    <form method="dialog">
+      <h3>Statistik</h3>
+      <p class="meta">Gezählt werden verschiedene Inhalte, nicht Dateien. Jahr, Herausgeber und Genre wie in der Liste.</p>
+      <div id="statistics-body"></div>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button class="primary">Schließen</button>
       </div>
     </form>
   </dialog>
@@ -360,11 +395,23 @@
       <label>Titel <input id="own-title" autocomplete="off"></label>
       <div class="own-grid">
         <label>Jahr <input id="own-year" autocomplete="off" inputmode="numeric"></label>
-        <label>Spieler <input id="own-players" autocomplete="off" placeholder="1-2"></label>
+        <label>Art <select id="own-kind">
+          <option value="game">Spiel</option>
+          <option value="demo">Demo</option>
+          <option value="intro">Intro</option>
+          <option value="music">Musik</option>
+          <option value="diskmag">Diskmag</option>
+          <option value="tool">Werkzeug</option>
+          <option value="graphics">Grafik</option>
+        </select></label>
+        <label class="own-game">Spieler <input id="own-players" autocomplete="off" placeholder="1-2"></label>
+        <label class="own-demo">Gruppe <input id="own-group" autocomplete="off"></label>
         <label>Herausgeber <input id="own-publisher" autocomplete="off"></label>
-        <label>Entwickler <input id="own-developer" autocomplete="off"></label>
+        <label>Entwickler <input id="own-developer" autocomplete="off" placeholder=""></label>
+        <label class="own-demo">Party <input id="own-party" autocomplete="off" placeholder="X'2008"></label>
+        <label class="own-demo">Platz <input id="own-place" autocomplete="off" inputmode="numeric" placeholder="1"></label>
       </div>
-      <label>Genre <input id="own-genres" autocomplete="off" placeholder="Action, Shoot'em Up"></label>
+      <label class="own-game">Genre <input id="own-genres" autocomplete="off" placeholder="Action, Shoot'em Up"></label>
       <label>Beschreibung (Deutsch) <textarea id="own-synopsis" rows="5" lang="de"></textarea></label>
       <label>Beschreibung (Englisch) <textarea id="own-synopsis_en" rows="5" lang="en"></textarea></label>
       <p class="meta">Eine Sprache genügt; mit beiden lesen alle Breadbin-Nutzer den Text in ihrer Sprache.</p>

@@ -12,7 +12,7 @@ use breadbin_core::{db, scan, share};
 use rusqlite::Connection;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -22,6 +22,13 @@ struct AppState {
     /// Bilder von ScreenScraper.
     media_dir: PathBuf,
     conn: Mutex<Connection>,
+    /// Eigene Verbindung nur für die Suche (WAL erlaubt paralleles Lesen): Eine laufende Suche hält so
+    /// weder die Oberfläche noch andere Befehle auf und lässt sich abbrechen. Wird beim ersten Suchen
+    /// geöffnet und beim Zurückspielen einer Sicherung geschlossen.
+    search_conn: Mutex<Option<Connection>>,
+    search_interrupt: Mutex<Option<rusqlite::InterruptHandle>>,
+    /// Nummer der jüngsten Suche; ältere brechen ab bzw. liefern nichts.
+    search_gen: AtomicU64,
     /// Abbruch-Merker des laufenden Scans, `None` wenn keiner läuft.
     scan_cancel: Mutex<Option<Arc<AtomicBool>>>,
     /// Abbruch-Merker des laufenden Abrufs von Beschreibungen.
@@ -66,9 +73,40 @@ fn remove_source(state: State<AppState>, id: i64) -> CmdResult<()> {
     db::remove_source(&state.conn.lock().unwrap(), id).map_err(err)
 }
 
+/// Sucht im Hintergrund. Eine neuere Suche bricht die laufende ab; abgebrochene bzw. überholte
+/// Suchen liefern `None` (die Oberfläche zeigt nur das Ergebnis der jüngsten).
 #[tauri::command]
-fn search(state: State<AppState>, options: db::Search) -> CmdResult<Vec<db::GameRow>> {
-    db::search_with(&state.conn.lock().unwrap(), &options).map_err(err)
+async fn search(app: AppHandle, options: db::Search) -> CmdResult<Option<Vec<db::GameRow>>> {
+    let nr = {
+        let state = app.state::<AppState>();
+        let nr = state.search_gen.fetch_add(1, Ordering::SeqCst) + 1;
+        if let Some(h) = state.search_interrupt.lock().unwrap().as_ref() {
+            h.interrupt();
+        }
+        nr
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let current = || state.search_gen.load(Ordering::SeqCst) == nr;
+        let mut guard = state.search_conn.lock().unwrap();
+        if !current() {
+            return Ok(None);
+        }
+        if guard.is_none() {
+            let c = Connection::open(&state.db_path).map_err(err)?;
+            c.execute_batch("PRAGMA busy_timeout=10000; PRAGMA query_only=1;")
+                .map_err(err)?;
+            *state.search_interrupt.lock().unwrap() = Some(c.get_interrupt_handle());
+            *guard = Some(c);
+        }
+        let result = db::search_with(guard.as_ref().expect("eben geöffnet"), &options);
+        if !current() {
+            return Ok(None);
+        }
+        result.map(Some).map_err(err)
+    })
+    .await
+    .map_err(err)?
 }
 
 // ---------------------------------------------------------------- Eigene Listen und Notizen
@@ -456,6 +494,9 @@ async fn restore_library(state: State<'_, AppState>, path: String) -> CmdResult<
     // Tausch in einem eigenen Block: die Sperre darf nicht über ein await reichen.
     {
         let mut conn = state.conn.lock().unwrap();
+        // Suchverbindung schließen; die nächste Suche öffnet die neue Datenbank.
+        *state.search_interrupt.lock().unwrap() = None;
+        *state.search_conn.lock().unwrap() = None;
         // Alte Verbindung schließen, damit die Datei frei ist.
         drop(std::mem::replace(
             &mut *conn,
@@ -519,6 +560,11 @@ fn game_variants(state: State<AppState>, sha1s: Vec<String>) -> CmdResult<Vec<db
 #[tauri::command]
 fn cleanup(state: State<AppState>) -> CmdResult<db::Cleanup> {
     db::cleanup(&state.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn collection_stats(state: State<AppState>) -> CmdResult<db::CollectionStats> {
+    db::collection_stats(&state.conn.lock().unwrap()).map_err(err)
 }
 
 #[tauri::command]
@@ -664,7 +710,20 @@ fn main() {
             };
             std::fs::create_dir_all(&dir)?;
             let db_path = dir.join("spiele.sqlite");
-            let conn = db::open(&db_path)?;
+            let conn = match db::open(&db_path) {
+                Ok(c) => c,
+                Err(e) => {
+                    // Etwa eine Bibliothek aus einer neueren Fassung: Grund zeigen statt still zu enden.
+                    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+                    let handle = app.handle().clone();
+                    app.dialog()
+                        .message(format!("{e:#}"))
+                        .title("Breadbin")
+                        .kind(MessageDialogKind::Error)
+                        .show(move |_| handle.exit(1));
+                    return Ok(());
+                }
+            };
             if portable.is_some() {
                 // Anderer Rechner, anderer Buchstabe: Ordner auf dem Stick wieder finden.
                 if let Some(now) = drive_of(&dir) {
@@ -690,6 +749,9 @@ fn main() {
                 db_path,
                 media_dir: dir.join("media"),
                 conn: Mutex::new(conn),
+                search_conn: Mutex::new(None),
+                search_interrupt: Mutex::new(None),
+                search_gen: AtomicU64::new(0),
                 scan_cancel: Mutex::new(None),
                 scrape_cancel: Mutex::new(None),
             });
@@ -720,6 +782,7 @@ fn main() {
             community_submit,
             toggle_favorite,
             cleanup,
+            collection_stats,
             backup_library,
             restore_library,
             lists,
@@ -762,14 +825,24 @@ fn main() {
             devices::device_status,
             devices::wake_device,
             devices::power_off_device,
+            devices::stop_game,
             devices::discover_devices,
+            devices::relocate_device,
             devices::list_device_dirs,
             devices::clean_upload_dir,
             devices::copy_to_device,
             devices::fetch_saves,
             devices::find_emulators,
             devices::launch_emulator,
+            devices::emu_insert,
+            devices::emu_capture,
         ])
-        .run(tauri::generate_context!())
-        .expect("Fehler beim Start der App");
+        .build(tauri::generate_context!())
+        .expect("Fehler beim Start der App")
+        .run(|_, event| {
+            // Laufendes VICE nicht mit Breadbin abstürzen lassen (Monitor-Verbindung übergeben).
+            if let tauri::RunEvent::Exit = event {
+                breadbin_core::vicemon::hand_over_on_exit();
+            }
+        });
 }

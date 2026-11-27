@@ -1,10 +1,12 @@
-//! Dateien auf einem Gerät, gleich ob Ultimate (FTP), BMC64 (HTTP) oder TeensyROM (TCP 2112).
+//! Dateien auf einem Gerät, gleich ob Ultimate (FTP), BMC64 (HTTP), BMX (HTTP) oder TeensyROM (TCP 2112).
 //!
 //! Pfade beginnen immer mit dem Laufwerk: `/USB0/Spiele` beim Ultimate, `/SD/Spiele` bei BMC64,
-//! `/SD/…` oder `/USB/…` beim TeensyROM.
-//! Geräte-Quellen tragen das Protokoll im Ort: `ftp://host/…`, `bmc64://host/…`, `teensyrom://host/…`.
+//! `/SD/…` oder `/USB/…` beim TeensyROM, `/USER/disks/…` bei BMX.
+//! Geräte-Quellen tragen das Protokoll im Ort: `ftp://host/…`, `bmc64://host/…`, `teensyrom://host/…`,
+//! `bmx://host/…`.
 
 use crate::bmc64::Bmc64;
+use crate::bmx::Bmx;
 use crate::ftp::{self, Ftp, RemoteEntry};
 use crate::teensyrom::TeensyRom;
 use crate::tr;
@@ -16,12 +18,15 @@ pub const ULTIMATE: &str = "ultimate";
 pub const BMC64: &str = "bmc64";
 /// Geräteart „TeensyROM“ (Modul, Fernsteuerung über TCP 2112) – ungetestet.
 pub const TEENSYROM: &str = "teensyrom";
+/// Geräteart „BMX“ (Bare Metal X auf Raspberry Pi 4/5, Remote API).
+pub const BMX: &str = "bmx";
 
 /// Bekannte Geräteart zu einem gespeicherten Wert (Unbekanntes gilt als Ultimate).
 pub fn kind_of(value: &str) -> &'static str {
     match value {
         BMC64 => BMC64,
         TEENSYROM => TEENSYROM,
+        BMX => BMX,
         _ => ULTIMATE,
     }
 }
@@ -30,6 +35,7 @@ pub enum Remote {
     Ftp(Ftp),
     Bmc64(Bmc64),
     TeensyRom(TeensyRom),
+    Bmx(Bmx),
 }
 
 /// Ort einer Geräte-Quelle: `ftp://host/pfad` bzw. `bmc64://host/pfad`.
@@ -37,6 +43,7 @@ pub fn location(kind: &str, host: &str, path: &str) -> String {
     let scheme = match kind {
         BMC64 => "bmc64",
         TEENSYROM => "teensyrom",
+        BMX => "bmx",
         _ => "ftp",
     };
     format!(
@@ -52,6 +59,8 @@ pub fn location_kind(location: &str) -> &'static str {
         BMC64
     } else if location.starts_with("teensyrom://") {
         TEENSYROM
+    } else if location.starts_with("bmx://") {
+        BMX
     } else {
         ULTIMATE
     }
@@ -62,6 +71,7 @@ impl Remote {
         Ok(match kind {
             BMC64 => Remote::Bmc64(Bmc64::new(host, password)),
             TEENSYROM => Remote::TeensyRom(TeensyRom::new(host)),
+            BMX => Remote::Bmx(Bmx::new(host, password)),
             _ => Remote::Ftp(Ftp::connect(host, password)?),
         })
     }
@@ -82,6 +92,7 @@ impl Remote {
             Remote::Ftp(f) => f.list(path),
             Remote::Bmc64(b) => b.list(path),
             Remote::TeensyRom(t) => t.list(path),
+            Remote::Bmx(b) => b.list(path),
         }
     }
 
@@ -90,6 +101,7 @@ impl Remote {
             Remote::Ftp(f) => f.retrieve(path, limit),
             Remote::Bmc64(b) => b.download(path, limit),
             Remote::TeensyRom(t) => t.download(path, limit),
+            Remote::Bmx(b) => b.download(path, limit),
         }
     }
 
@@ -98,6 +110,7 @@ impl Remote {
             Remote::Ftp(f) => f.store(path, data),
             Remote::Bmc64(b) => b.upload(path, data),
             Remote::TeensyRom(t) => t.upload(path, data, true).map(|_| ()),
+            Remote::Bmx(b) => b.upload(path, data),
         }
     }
 
@@ -106,6 +119,7 @@ impl Remote {
             Remote::Ftp(f) => f.delete(path),
             Remote::Bmc64(b) => b.delete(path),
             Remote::TeensyRom(t) => t.delete(path),
+            Remote::Bmx(b) => b.delete(path),
         }
     }
 
@@ -115,6 +129,7 @@ impl Remote {
             Remote::Ftp(f) => f.mkdir(path),
             Remote::Bmc64(b) => b.mkdir(path),
             Remote::TeensyRom(t) => t.mkdir(path),
+            Remote::Bmx(b) => b.mkdir(path),
         }
     }
 
@@ -123,6 +138,7 @@ impl Remote {
             Remote::Ftp(f) => f.is_dir(path),
             Remote::Bmc64(b) => b.is_dir(path),
             Remote::TeensyRom(t) => t.is_dir(path),
+            Remote::Bmx(b) => b.is_dir(path),
         }
     }
 
@@ -151,6 +167,14 @@ mod tests {
         assert_eq!(location_kind(&t), TEENSYROM);
         assert_eq!(ftp::split_location(&t), Some(("192.0.2.9", "/SD/Spiele")));
         assert_eq!(kind_of("teensyrom"), TEENSYROM);
+        let b = location(BMX, "192.0.2.10", "/USER/disks/Spiele");
+        assert_eq!(b, "bmx://192.0.2.10/USER/disks/Spiele");
+        assert_eq!(location_kind(&b), BMX);
+        assert_eq!(
+            ftp::split_location(&b),
+            Some(("192.0.2.10", "/USER/disks/Spiele"))
+        );
+        assert_eq!(kind_of("bmx"), BMX);
         assert_eq!(kind_of(""), ULTIMATE);
     }
 }

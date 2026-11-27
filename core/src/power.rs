@@ -1,4 +1,4 @@
-//! Ultimate-Geräte ein- und ausschalten, Erreichbarkeit prüfen, im Netz suchen.
+//! Ultimate-Geräte ein- und ausschalten, Erreichbarkeit prüfen, im Netz suchen (auch BMC64 und BMX).
 //!
 //! - Einschalten: Wake-on-WiFi mit einem Magic Packet an die **WLAN-MAC** (die
 //!   Ethernet-MAC weckt nicht). Geht beim C64 Ultimate und Ultimate 64 Elite II, wenn am
@@ -187,9 +187,12 @@ pub struct Found {
     pub wifi_mac: String,
     #[serde(skip)]
     pub ethernet_mac: String,
+    /// MAC dieser Adresse laut ARP-Speicher (zum Wiederfinden gespeicherter Geräte).
+    #[serde(skip)]
+    pub mac: String,
     /// Weitere Adressen desselben Geräts (LAN und WLAN), beim Entdoppeln gesammelt.
     pub other_hosts: Vec<String>,
-    /// Geräteart: `ultimate` oder `bmc64`.
+    /// Geräteart: `ultimate`, `bmc64` oder `bmx`.
     pub kind: String,
 }
 
@@ -203,11 +206,12 @@ pub fn local_ipv4() -> Option<Ipv4Addr> {
     }
 }
 
-/// Was antwortet unter `host`? Ultimate: dessen `/v1/info`; BMC64: Angaben aus `/api/status`.
-/// `None`, wenn dort kein Webserver läuft oder er zu keinem der beiden gehört.
+/// Was antwortet unter `host`? Ultimate: dessen `/v1/info`; BMC64: Angaben aus `/api/status`;
+/// BMX: `/bmx/api/v1/state`. `None`, wenn dort kein Webserver läuft oder er zu keinem gehört.
 enum Answer {
     Ultimate(serde_json::Value),
     Bmc64(crate::bmc64::Status),
+    Bmx(crate::bmx::State),
 }
 
 fn identify(host: &str) -> Option<Answer> {
@@ -225,7 +229,9 @@ fn identify(host: &str) -> Option<Answer> {
         .read_to_string()
         .unwrap_or_default();
     if !looks_like_ultimate(&body) {
-        return crate::bmc64::quick_status(host, "").map(Answer::Bmc64);
+        return crate::bmx::quick_status(host, "")
+            .map(Answer::Bmx)
+            .or_else(|| crate::bmc64::quick_status(host, "").map(Answer::Bmc64));
     }
     let info = agent
         .get(format!("http://{host}/v1/info"))
@@ -239,8 +245,10 @@ fn identify(host: &str) -> Option<Answer> {
     ))
 }
 
-/// Sucht im eigenen /24-Netz nach Ultimate-Geräten und BMC64 (bis zu 64 gleichzeitige Anfragen).
-/// Ultimates mit Netzwerk-Passwort antworten nicht und werden nicht gefunden; ein BMC64 mit PIN schon.
+/// Sucht im eigenen /24-Netz nach Ultimate-Geräten, BMC64 und BMX (bis zu 64 gleichzeitige Anfragen).
+/// Ultimates mit Netzwerk-Passwort antworten nicht und werden nicht gefunden; ein BMC64 mit PIN und
+/// ein BMX mit Passwort schon. BMX meldet sich zusätzlich auf einen UDP-Broadcast (Port 6464) –
+/// so wird er auch außerhalb des eigenen /24-Netzes gefunden.
 pub fn discover() -> Result<Vec<Found>> {
     let me = local_ipv4().ok_or_else(|| {
         anyhow!(tr!(
@@ -254,12 +262,17 @@ pub fn discover() -> Result<Vec<Found>> {
         .map(|i| format!("{}.{}.{}.{i}", o[0], o[1], o[2]))
         .collect();
     let found = std::sync::Mutex::new(Vec::new());
+    let bmx_hosts = std::sync::Mutex::new(Vec::new());
     std::thread::scope(|s| {
+        s.spawn(|| {
+            *bmx_hosts.lock().unwrap() = crate::bmx::discover(Some(me), Duration::from_secs(2));
+        });
         for chunk in hosts.chunks(4) {
             let found = &found;
             s.spawn(move || {
                 for h in chunk {
                     match identify(h) {
+                        Some(Answer::Bmx(st)) => found.lock().unwrap().push(bmx_found(h, st)),
                         Some(Answer::Bmc64(st)) => found.lock().unwrap().push(Found {
                             host: h.clone(),
                             product: st.product(),
@@ -268,6 +281,7 @@ pub fn discover() -> Result<Vec<Found>> {
                             unique_id: String::new(),
                             wifi_mac: String::new(),
                             ethernet_mac: String::new(),
+                            mac: String::new(),
                             other_hosts: Vec::new(),
                             kind: crate::remote::BMC64.into(),
                         }),
@@ -283,6 +297,7 @@ pub fn discover() -> Result<Vec<Found>> {
                                 unique_id: t("unique_id"),
                                 wifi_mac: normalize_mac(&t("wifi_mac")).unwrap_or_default(),
                                 ethernet_mac: normalize_mac(&t("ethernet_mac")).unwrap_or_default(),
+                                mac: String::new(),
                                 other_hosts: Vec::new(),
                                 kind: crate::remote::ULTIMATE.into(),
                             });
@@ -294,14 +309,57 @@ pub fn discover() -> Result<Vec<Found>> {
         }
     });
     let mut list = found.into_inner().unwrap();
+    // Per UDP gefundene BMX, die die Suche über HTTP nicht erreicht hat (anderes Netz, anderer Port).
+    for h in bmx_hosts.into_inner().unwrap() {
+        if !list.iter().any(|f| f.host == h) {
+            let st = crate::bmx::quick_status(&h, "").unwrap_or_default();
+            list.push(bmx_found(&h, st));
+        }
+    }
     let macs: std::collections::HashMap<String, String> = list
         .iter()
         .filter_map(|f| arp_mac(&f.host).map(|m| (f.host.clone(), m)))
         .collect();
+    for f in &mut list {
+        if let Some(m) = macs.get(&f.host) {
+            f.mac = m.clone();
+        }
+    }
     let lookup = |ip: &str| macs.get(ip).cloned();
     fill_wifi_macs(&mut list, lookup);
     dedup_prefer_lan(&mut list, lookup);
     Ok(list)
+}
+
+/// Wie [`discover`], aber ein Ergebnis, das höchstens `max_age` alt ist, wird wiederverwendet. Gleichzeitige
+/// Aufrufe (mehrere Geräte nicht erreichbar) warten auf eine gemeinsame Suche statt jeder eine eigene zu starten.
+pub fn discover_cached(max_age: Duration) -> Result<Vec<Found>> {
+    static LAST: std::sync::Mutex<Option<(std::time::Instant, Vec<Found>)>> =
+        std::sync::Mutex::new(None);
+    let mut last = LAST.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((at, list)) = last.as_ref()
+        && at.elapsed() < max_age
+    {
+        return Ok(list.clone());
+    }
+    let list = discover()?;
+    *last = Some((std::time::Instant::now(), list.clone()));
+    Ok(list)
+}
+
+fn bmx_found(host: &str, st: crate::bmx::State) -> Found {
+    Found {
+        host: host.to_string(),
+        product: st.product(),
+        hostname: "bmx".into(),
+        firmware: st.version,
+        unique_id: String::new(),
+        wifi_mac: String::new(),
+        ethernet_mac: String::new(),
+        mac: String::new(),
+        other_hosts: Vec::new(),
+        kind: crate::remote::BMX.into(),
+    }
 }
 
 /// Ein Gerät mit LAN und WLAN antwortet unter zwei Adressen: nach unique_id entdoppeln. Behalten wird
@@ -460,6 +518,7 @@ mod tests {
             unique_id: "U1".into(),
             wifi_mac: String::new(),
             ethernet_mac: "02:15:41:00:00:01".into(),
+            mac: String::new(),
             other_hosts: Vec::new(),
             kind: "ultimate".into(),
         };
@@ -493,6 +552,7 @@ mod tests {
         };
         let c64u = |host: &str| Found {
             ethernet_mac: String::new(),
+            mac: String::new(),
             ..f(host)
         };
         let mut list = vec![c64u("192.0.2.103"), c64u("192.0.2.246")];

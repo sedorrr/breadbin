@@ -5,6 +5,8 @@
 //! Die Kopie bleibt liegen: Speichert ein Spiel auf seine Diskette, ist der Stand beim nächsten
 //! Start noch da. Bei Spielen mit mehreren Disketten bekommt VICE eine Wechselliste
 //! (`-flipname`); die nächste Diskette legt man in VICE über „Fliplist“ ein (GTK-Fassung: Alt+N, SDL-Fassung: Menü F12).
+//! VICE bekommt außerdem einen Monitor-Port: „Einlegen“ und „Bildschirmfoto“ in Breadbin gehen
+//! darüber (siehe `vicemon.rs`).
 
 use crate::db;
 use crate::launch::{device_file_name, read_location};
@@ -541,6 +543,29 @@ fn place(
     }))
 }
 
+/// Legt `sha1` in Laufwerk 8 des zuletzt gestarteten VICE ein (Kopie im Emulator-Ordner wie beim Start).
+pub fn insert(
+    conn: &Connection,
+    sha1: &str,
+    dir: &Path,
+    password_for: &dyn Fn(&str) -> String,
+) -> Result<String> {
+    let format = db::details(conn, sha1)?.row.format;
+    if !matches!(format.as_str(), "D64" | "D71" | "D81" | "G64") {
+        bail!(tr!(
+            "Einlegen geht nur mit Disketten.",
+            "Only disks can be inserted."
+        ));
+    }
+    let file = place(conn, sha1, dir, password_for)?;
+    let short = format!("{}.{}", &sha1[..sha1.len().min(12)], format.to_lowercase());
+    crate::vicemon::attach(&file, &short)?;
+    Ok(tr!(
+        "In VICE eingelegt (Laufwerk 8).",
+        "Inserted in VICE (drive 8)."
+    ))
+}
+
 /// Startet `sha1` im Emulator. `disks` sind (in Reihenfolge) alle Disketten desselben Spiels,
 /// einschließlich `sha1`; sie kommen in die Wechselliste.
 pub fn start(
@@ -606,6 +631,15 @@ pub fn start(
             );
         }
     }
+    // VICE: Monitor-Port für Einlegen und Bildschirmfoto (nicht, wenn der Nutzer selbst einen setzt).
+    let mut monitor = None;
+    if is_vice(emulator) && !format!("{args} {extra}").contains("remotemonitor") {
+        let port = crate::vicemon::free_port()?;
+        let mut with = crate::vicemon::monitor_args(port);
+        with.extend(pre);
+        pre = with;
+        monitor = Some(port);
+    }
     let (program, argv) =
         command_line_full(emulator, args, &extra, &pre, &file, fliplist.as_deref());
     let mut child = Command::new(&program)
@@ -625,14 +659,17 @@ pub fn start(
     std::thread::spawn(move || {
         let _ = child.wait();
     });
+    if let Some(port) = monitor {
+        crate::vicemon::register(port);
+    }
     let name = Path::new(emulator)
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
     let message = if fliplist.is_some() && is_vice(emulator) {
         tr!(
-            "Im Emulator gestartet ({name}); weitere Disketten über die Wechselliste (Fliplist) von VICE einlegen, meist Alt+N.",
-            "Started in the emulator ({name}); insert further disks via VICE's fliplist, usually Alt+N."
+            "Im Emulator gestartet ({name}); weitere Disketten mit „Einlegen“ in den Details oder über die Wechselliste (Fliplist) von VICE, meist Alt+N.",
+            "Started in the emulator ({name}); insert further disks with “Insert” in the details or via VICE's fliplist, usually Alt+N."
         )
     } else {
         tr!(

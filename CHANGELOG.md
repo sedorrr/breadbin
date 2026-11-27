@@ -2,7 +2,7 @@
 
 English first, German below each version. / Englisch zuerst, Deutsch jeweils darunter.
 
-## Unreleased / Unveröffentlicht
+## 0.9.6 (2026-11-27)
 
 - Before submitting, the dialog lists entries without description or picture and entries entered as games whose file
   name sounds like a demo, intro or music. These are hints only: click a title to edit it, “Send without these” keeps

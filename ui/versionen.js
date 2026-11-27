@@ -2,6 +2,11 @@
 // Neue Fassung oben anfügen: { v, date, de: [...], en: [...] }.
 const VERSIONS = [
   {
+    v: "0.9.6", date: "2026-11-27",
+    de: ["Vor dem Einsenden: Hinweise auf fehlende Beschreibung, Bild oder Art"],
+    en: ["Before submitting: hints on missing description, picture or kind"],
+  },
+  {
     v: "0.9.5", date: "2026-11-27",
     de: ["BMX (Raspberry Pi 4/5/400) als Gerät", "Knopf „Spiel beenden“ an jedem Gerät",
       "Geräte mit neuer IP-Adresse wiederfinden („Neu suchen“)", "VICE: Diskwechsel und Bildschirmfoto",
